@@ -21,16 +21,23 @@ jobs:
 
 
     # Python环境
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
+    #- name: Setup Python
+      #uses: actions/setup-python@v5
+      #with:
+        #python-version: "3.11"
+
+
+    # Python环境检查
+    - name: Check Python
+      run: |
+        python3 --version
+        pip3 --version
 
 
     # 安装依赖
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip3 install -r requirements.txt
 
 
     # 安装 Playwright 浏览器
