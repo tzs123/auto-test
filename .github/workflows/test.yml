@@ -12,7 +12,10 @@ jobs:
 
     #runs-on: ubuntu-latest
     runs-on: self-hosted
-
+    env:
+      HOME: /Users/tanzsongsen
+      PYTHONUSERBASE: /Users/tanzsongsen/.local
+      
     steps:
 
     # 拉代码
