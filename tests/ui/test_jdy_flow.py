@@ -359,8 +359,34 @@ def _flow_admin_verify(page, case):
         # 如果有空状态提示，则断言失败
         assert not has_empty, "搜索结果为空（页面显示空状态）"
 
+        # ──── 前后台数据一致性校验 ────
+        # 获取后台表格第一行的手机号和车牌号，与前台流程中使用的值对比
+        row_data = app_page.get_first_row_phone_and_car()
         allure.attach(
-            f"✅ 验证通过：搜索手机号'{phone}'找到 {max(row_count, total_count)} 条申请单数据",
+            f"前台手机号: {phone}\n后台表格手机号: {row_data.get('phone', '')}\n"
+            f"后台表格车牌号: {row_data.get('carNumber', '')}",
+            name="前后台数据对比",
+            attachment_type=allure.attachment_type.TEXT,
+        )
+
+        if row_data:
+            # 断言手机号一致（后台显示明文，前台输入的也是明文）
+            back_phone = row_data.get("phone", "")
+            assert back_phone == phone, \
+                f"前后台手机号不一致！前台='{phone}'，后台='{back_phone}'"
+            allure.attach(f"✅ 手机号一致: {phone}", name="手机号一致性校验")
+
+            # 断言车牌号一致（如果用例有期望车牌号）
+            expected_car = case.get("carNumber", "")
+            if expected_car:
+                back_car = row_data.get("carNumber", "")
+                assert back_car == expected_car, \
+                    f"前后台车牌号不一致！前台='{expected_car}'，后台='{back_car}'"
+                allure.attach(f"✅ 车牌号一致: {expected_car}", name="车牌号一致性校验")
+
+        allure.attach(
+            f"✅ 验证通过：搜索手机号'{phone}'找到 {max(row_count, total_count)} 条申请单数据，"
+            f"前后台数据一致",
             name="后台验证结果",
         )
     finally:

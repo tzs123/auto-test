@@ -263,3 +263,58 @@ class AdminApplicationPage:
 
     def screenshot(self) -> bytes:
         return self.page.screenshot()
+
+    @allure.step("获取表格第一行的手机号和车牌号")
+    def get_first_row_phone_and_car(self) -> dict:
+        """获取表格第一行的手机号和车牌号，用于前后台数据一致性断言。
+
+        表格列顺序（参考DOM）：
+        申请单号、申请时间、用户最后操作时间、客户名称、手机号、车牌号、
+        网申状态、审批状态、所在省份、产品、当前节点额度、一级申请渠道、
+        二级申请渠道、三级申请渠道、注册渠道、申请渠道、操作
+
+        Returns:
+            {"phone": "13800123456", "carNumber": "京A12345"} 或空字典
+        """
+        try:
+            row = self.page.locator('tbody tr.arco-table-tr').first
+            if not row.is_visible(timeout=5000):
+                return {}
+
+            cells = row.locator('td')
+            count = cells.count()
+            if count < 6:
+                return {}
+
+            # 手机号是第5列（index 4），车牌号是第6列（index 5）
+            phone_text = cells.nth(4).inner_text(timeout=3000).strip().strip('"')
+            car_text = cells.nth(5).inner_text(timeout=3000).strip().strip('"')
+
+            result = {"phone": phone_text, "carNumber": car_text}
+            allure.attach(
+                f"后台表格第一行 - 手机号: {phone_text}, 车牌号: {car_text}",
+                name="后台表格数据",
+                attachment_type=allure.attachment_type.TEXT,
+            )
+            return result
+        except Exception as e:
+            allure.attach(f"获取表格行数据失败: {e}", name="表格数据获取错误")
+            return {}
+
+    @allure.step("获取表格所有行的手机号列表")
+    def get_all_phone_numbers(self) -> list:
+        """获取表格所有行的手机号列表，用于验证手机号精确匹配。"""
+        try:
+            rows = self.page.locator('tbody tr.arco-table-tr')
+            count = rows.count()
+            phones = []
+            for i in range(count):
+                cells = rows.nth(i).locator('td')
+                if cells.count() >= 5:
+                    phone = cells.nth(4).inner_text(timeout=2000).strip().strip('"')
+                    phones.append(phone)
+            allure.attach(f"表格手机号列表: {phones}", name="手机号列表")
+            return phones
+        except Exception as e:
+            allure.attach(f"获取手机号列表失败: {e}", name="手机号列表错误")
+            return []
