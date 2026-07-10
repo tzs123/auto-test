@@ -6,7 +6,6 @@ on:
 
 
 
-
 concurrency:
   group: pytest
   cancel-in-progress: true
@@ -28,14 +27,6 @@ jobs:
 
 
 
-    # Python环境
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
-
-
     # 环境检查
     - name: Check Environment
       run: |
@@ -53,7 +44,7 @@ jobs:
 
 
     # Playwright
-    - name: Install playwright
+    - name: Install Playwright
       run: |
         playwright install chromium
 
@@ -63,18 +54,8 @@ jobs:
     - name: Run Test
       continue-on-error: true
       run: |
-
-        rm -rf allure-results
-        mkdir allure-results
-
-
         pytest \
         --alluredir=allure-results
-
-
-        echo "===== allure results ====="
-
-        ls -la allure-results
 
 
 
@@ -82,11 +63,9 @@ jobs:
     - name: Generate Allure Report
       if: always()
       run: |
-
         rm -rf reports
 
         mkdir -p reports
-
 
         allure generate \
         allure-results \
@@ -96,36 +75,30 @@ jobs:
 
 
     # 检查报告
-    - name: Check Report
+    - name: Check Allure Report
       if: always()
       run: |
+        ls -la allure-results || true
 
-        ls -la reports
-
-        find reports/allure-report -maxdepth 2 -type f | head -20
-
+        ls -la reports/allure-report
 
 
-    # 上传报告
+
+    # 上传
     - name: Upload allure report
       if: always()
       uses: actions/upload-artifact@v4
       with:
-
         name: allure-report
-
         path: reports/allure-report
 
 
 
-    # 发布Pages
+    # 发布 Pages
     - name: Deploy Allure Report
       if: always()
       uses: peaceiris/actions-gh-pages@v4
       with:
-
         github_token: ${{ secrets.GITHUB_TOKEN }}
-
         publish_dir: reports/allure-report
-
         publish_branch: gh-pages
