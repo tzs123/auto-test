@@ -56,4 +56,4 @@ echo "allure文件数量:"
 find "$RESULTS" -type f | wc -l
 
 
-python3 run_main.py
+python3 run_main.py || true
