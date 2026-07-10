@@ -112,26 +112,14 @@ def screenshot_on_failure(page: Page, request):
 
     yield
 
-    if request.node.rep_call.failed:
+    rep = getattr(request.node, "rep_call", None)
 
-        page.screenshot(
-            path=f"allure-results/{request.node.name}.png",
-            full_page=True
+    if rep and rep.failed:
+
+        img = page.screenshot()
+
+        allure.attach(
+            img,
+            name="failure screenshot",
+            attachment_type=allure.attachment_type.PNG
         )
-        
-        
-@pytest.fixture
-def page(page):
-
-    yield page
-
-
-    if page.is_closed():
-        return
-
-
-    allure.attach(
-        page.screenshot(),
-        name="failure screenshot",
-        attachment_type=allure.attachment_type.PNG
-    )
