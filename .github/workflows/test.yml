@@ -36,7 +36,7 @@ jobs:
     # 安装 Playwright 浏览器
     - name: Install playwright
       run: |
-        playwright install
+        playwright install chromium
 
 
     # 执行自动化
