@@ -16,3 +16,4 @@ runtime/
 .idea/
 .vscode/
 .DS_Store
+actions-runner/
