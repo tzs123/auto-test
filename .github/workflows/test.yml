@@ -93,26 +93,8 @@ jobs:
 
 
 
-    # =========================
-    # 清理
-    # =========================
-
-    - name: Cleanup workspace
-      if: always()
-      run: |
-
-        rm -rf allure-results
-        rm -rf reports
-        rm -rf .pytest_cache
-        rm -rf __pycache__
 
 
-
-    - name: Cleanup Pages temp
-      if: always()
-      run: |
-
-        rm -rf ~/actions_github_pages_*
 
     - name: Upload failed videos
       if: failure()
