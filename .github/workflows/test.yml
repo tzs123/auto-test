@@ -39,7 +39,7 @@ jobs:
     # 安装 Playwright 浏览器
     - name: Install playwright
       run: |
-        playwright install --with-deps
+        playwright install
 
 
     # 执行自动化
