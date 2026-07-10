@@ -21,84 +21,124 @@ jobs:
     steps:
 
 
-    # 拉代码
     - name: Checkout
       uses: actions/checkout@v4
 
 
 
-    # 环境检查
-    - name: Check Environment
+    - name: Check Python
       run: |
         python3 --version
         pip3 --version
-        allure --version
 
 
 
-    # 安装依赖
     - name: Install dependencies
       run: |
         pip3 install -r requirements.txt
 
 
 
-    # Playwright
-    - name: Install Playwright
+    - name: Install playwright
       run: |
         playwright install chromium
 
 
 
-    # 执行测试
     - name: Run Test
       continue-on-error: true
       run: |
-        pytest \
-        --alluredir=allure-results
+        chmod +x run.sh
+        ./run.sh
 
 
 
-    # 生成报告
     - name: Generate Allure Report
       if: always()
       run: |
+
         rm -rf reports
 
-        mkdir -p reports
-
         allure generate \
-        allure-results \
+        reports/allure-results \
         -o reports/allure-report \
         --clean
 
 
 
-    # 检查报告
-    - name: Check Allure Report
-      if: always()
-      run: |
-        ls -la allure-results || true
-
-        ls -la reports/allure-report
-
-
-
-    # 上传
     - name: Upload allure report
       if: always()
       uses: actions/upload-artifact@v4
       with:
+
         name: allure-report
+
         path: reports/allure-report
 
 
 
-    # 发布 Pages
     - name: Deploy Allure Report
       if: always()
       uses: peaceiris/actions-gh-pages@v4
+
       with:
+
         github_token: ${{ secrets.GITHUB_TOKEN }}
+
         publish_dir: reports/allure-report
+
         publish_branch: gh-pages
+
+
+
+    # =========================
+    # 清理
+    # =========================
+
+    - name: Cleanup workspace
+      if: always()
+      run: |
+
+        rm -rf allure-results
+        rm -rf reports
+        rm -rf .pytest_cache
+        rm -rf __pycache__
+
+
+
+    - name: Cleanup Pages temp
+      if: always()
+      run: |
+
+        rm -rf ~/actions_github_pages_*
+
+    - name: Upload failed videos
+      if: failure()
+      uses: actions/upload-artifact@v4
+
+      with:
+
+        name: playwright-video
+
+        path: test-results/
+
+
+    - name: Send Feishu Message
+      if: always()
+
+      run: |
+
+        curl \
+        -X POST \
+        -H "Content-Type: application/json" \
+        \
+        -d '
+        {
+          "msg_type":"text",
+          "content":{
+             "text":
+             "自动化测试完成\n\n报告地址:\nhttps://tzs123.github.io/auto-test/"
+          }
+        }
+        ' \
+        ${{ secrets.FEISHU_WEBHOOK }}

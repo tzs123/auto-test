@@ -4,6 +4,7 @@ import time
 import pytest
 import allure
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import Page
 from utils.http_client import HttpClient
 from utils.yaml_loader import load_config
 
@@ -106,23 +107,31 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     print(f"\n{'=' * 20} 测试汇总 {'=' * 20}")
     print(f"总计: {total} | 通过: {passed} | 失败: {failed + error}")
 
-    # MeterSphere 可选上报（未配置则跳过）
-    ms_url = os.getenv("MS_URL", "")
-    ms_ak = os.getenv("MS_ACCESS_KEY", "")
-    ms_sk = os.getenv("MS_SECRET_KEY", "")
-    ms_pid = os.getenv("MS_PROJECT_ID", "")
-    if ms_url and ms_ak and ms_sk and ms_pid:
-        try:
-            from utils.ms_reporter import MeterSphereReporter
+@pytest.fixture(scope="function", autouse=True)
+def screenshot_on_failure(page: Page, request):
 
-            reporter = MeterSphereReporter(ms_url, ms_ak, ms_sk)
-            reporter.upload_report(
-                project_id=ms_pid,
-                report_name=f"自动回归_{time.strftime('%Y%m%d_%H%M%S')}",
-                passed=passed,
-                failed=failed + error,
-                total=total,
-            )
-            print("MeterSphere 上报成功")
-        except Exception as e:
-            print(f"MeterSphere 上报失败（不影响测试结果）: {e}")
+    yield
+
+    if request.node.rep_call.failed:
+
+        page.screenshot(
+            path=f"allure-results/{request.node.name}.png",
+            full_page=True
+        )
+        
+        
+@pytest.fixture
+def page(page):
+
+    yield page
+
+
+    if page.is_closed():
+        return
+
+
+    allure.attach(
+        page.screenshot(),
+        name="failure screenshot",
+        attachment_type=allure.attachment_type.PNG
+    )
