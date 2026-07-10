@@ -25,6 +25,7 @@ python3 -m pytest tests/ui/test_jdy_home.py \
     --alluredir="$RESULTS" || true
 
 echo "--- 生成报告 ---"
+mkdir -p "$BASE_DIR/reports/allure-report"
 allure generate "$RESULTS" -o "$BASE_DIR/reports/allure-report" --clean 2>/dev/null || true
 
 echo "====== 完成！查看报告: allure serve $RESULTS ======"
