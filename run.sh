@@ -57,3 +57,6 @@ allure generate \
 echo "检查报告目录"
 
 ls -la "$BASE_DIR/reports/allure-report"
+
+echo "====== 完成 ======"
+exit 0
