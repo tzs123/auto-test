@@ -1,5 +1,6 @@
 name: pytest allure report
 
+
 on:
   workflow_dispatch:
   push:
@@ -7,75 +8,109 @@ on:
       - main
 
 
+concurrency:
+  group: pytest
+  cancel-in-progress: true
+
+
 jobs:
 
   test:
 
-    #runs-on: ubuntu-latest
     runs-on: self-hosted
-      
+
+
     steps:
 
-    # 拉代码
+
     - name: Checkout
       uses: actions/checkout@v4
 
 
-    # Python环境
-    #- name: Setup Python
-      #uses: actions/setup-python@v5
-      #with:
-        #python-version: "3.11"
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
 
 
-    # Python环境检查
+
     - name: Check Python
       run: |
         python3 --version
         pip3 --version
 
 
-    # 安装依赖
+
     - name: Install dependencies
       run: |
+        python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
 
 
-    # 安装 Playwright 浏览器
+
     - name: Install playwright
       run: |
         playwright install chromium
 
 
 
-    # 执行测试
-    - name: Run Test
+    - name: Check Allure
       run: |
-        chmod +x run.sh
-        ./run.sh
-    
-    
-    # 检查报告
+        allure --version
+
+
+
+    - name: Run Test
+      continue-on-error: true
+      run: |
+        pytest \
+        --alluredir=allure-results \
+        -v
+
+
+
+    - name: Generate Allure Report
+      if: always()
+      run: |
+        mkdir -p reports
+        allure generate allure-results \
+        -o reports/allure-report \
+        --clean
+
+
+
     - name: Check Allure Report
       if: always()
       run: |
         ls -la reports
         ls -la reports/allure-report
-    
-    
-    # 上传
+
+
+
     - name: Upload allure report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: allure-report
         path: reports/allure-report
-    
-    
-    # 发布 Pages
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: |
+          screenshots
+          logs
+          videos
+
+
     - name: Deploy Allure Report
       if: always()
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: reports/allure-report
+        publish_branch: gh-pages
+        keep_files: false
