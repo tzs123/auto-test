@@ -1,0 +1,55 @@
+name: pytest allure report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */2 * * *"
+
+
+jobs:
+
+  test:
+
+    runs-on: ubuntu-latest
+
+
+    steps:
+
+    # 拉代码
+    - name: Checkout
+      uses: actions/checkout@v4
+
+
+    # Python环境
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+
+    # 安装依赖
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+
+    # 安装 Playwright 浏览器
+    - name: Install playwright
+      run: |
+        playwright install --with-deps
+
+
+    # 执行自动化
+    - name: Run Test
+      run: |
+        chmod +x run.sh
+        ./run.sh
+
+
+    # 保存Allure结果
+    - name: Upload allure results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: allure-results
+        path: reports/allure-results
