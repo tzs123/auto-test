@@ -1,9 +1,5 @@
 #!/bin/bash
 
-export MS_URL="http://localhost:8081"
-export MS_ACCESS_KEY="BAJqNGDU1U87qQBD"
-export MS_SECRET_KEY="6ooIgWL5Acr8FLCw"
-export MS_PROJECT_ID="1531249729009098752"
 export ENV="test"
 
 BASE_DIR="/Users/tanzsongsen/auto_test"
@@ -27,9 +23,6 @@ echo "--- [3/3] 首页冒烟 ---"
 python3 -m pytest tests/ui/test_jdy_home.py \
     -v --tb=short -W ignore::Warning \
     --alluredir="$RESULTS" || true
-
-echo "--- 同步到 MeterSphere ---"
-python3 "$BASE_DIR/utils/ms_sync.py"
 
 echo "--- 生成报告 ---"
 allure generate "$RESULTS" -o "$BASE_DIR/reports/allure-report" --clean 2>/dev/null || true

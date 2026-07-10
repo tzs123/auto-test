@@ -155,33 +155,13 @@ def pytest_runtest_makereport(item, call):
                     pass
 
 
-# ===== 跑完汇总 + 可选上报 =====
+# ===== 跑完汇总 =====
 def pytest_terminal_summary(terminalreporter, exitstatus, config):
     passed = len(terminalreporter.stats.get("passed", []))
     failed = len(terminalreporter.stats.get("failed", []))
     error = len(terminalreporter.stats.get("error", []))
-    total = passed + failed + error
+    skipped = len(terminalreporter.stats.get("skipped", []))
+    total = passed + failed + error + skipped
 
     print(f"\n{'=' * 20} 测试汇总 {'=' * 20}")
-    print(f"总计: {total} | 通过: {passed} | 失败: {failed + error}")
-
-    # MeterSphere 可选上报（未配置则跳过）
-    ms_url = os.getenv("MS_URL", "")
-    ms_ak = os.getenv("MS_ACCESS_KEY", "")
-    ms_sk = os.getenv("MS_SECRET_KEY", "")
-    ms_pid = os.getenv("MS_PROJECT_ID", "")
-    if ms_url and ms_ak and ms_sk and ms_pid:
-        try:
-            from utils.ms_reporter import MeterSphereReporter
-
-            reporter = MeterSphereReporter(ms_url, ms_ak, ms_sk)
-            reporter.upload_report(
-                project_id=ms_pid,
-                report_name=f"自动回归_{time.strftime('%Y%m%d_%H%M%S')}",
-                passed=passed,
-                failed=failed + error,
-                total=total,
-            )
-            print("MeterSphere 上报成功")
-        except Exception as e:
-            print(f"MeterSphere 上报失败（不影响测试结果）: {e}")
+    print(f"总计: {total} | 通过: {passed} | 失败: {failed + error} | 跳过: {skipped}")

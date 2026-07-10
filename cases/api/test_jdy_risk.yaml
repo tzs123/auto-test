@@ -121,12 +121,12 @@
   risk_category: mobile
   risk_level: HIGH
   verify_field: phone
-  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码", "车牌"]
   body:
     applyId: "865634306742032147"
     phone: "MTIyMjIyMjIyMjI="
     captcha: "124214"
-    carNumber: ""
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
   expect_code: 200
 
 - name: RISK-MOBILE-001 手机号格式非法-位数不足
@@ -136,12 +136,12 @@
   risk_category: mobile
   risk_level: HIGH
   verify_field: phone
-  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码", "车牌"]
   body:
     applyId: "865634306742032147"
     phone: "MTIyMjIyMjIyMjI="
     captcha: "124214"
-    carNumber: ""
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
   expect_code: 200
 
 - name: RISK-MOBILE-001 手机号格式非法-非1开头
@@ -151,12 +151,12 @@
   risk_category: mobile
   risk_level: HIGH
   verify_field: phone
-  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码", "车牌"]
   body:
     applyId: "865634306742032147"
     phone: "MjIyMjIyMjIyMjI="
     captcha: "124214"
-    carNumber: ""
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
   expect_code: 200
 
 - name: RISK-MOBILE-002 手机号黑名单
@@ -166,12 +166,12 @@
   risk_category: mobile
   risk_level: HIGH
   verify_field: phone
-  verify_keywords: ["手机", "phone", "黑名单", "手机号", "号码"]
+  verify_keywords: ["手机", "phone", "黑名单", "手机号", "号码", "车牌"]
   body:
     applyId: "865634306742032147"
     phone: "MTIyMjIyMjIyMjI="
     captcha: "124214"
-    carNumber: ""
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
   expect_code: 200
 
 - name: RISK-MOBILE-003 借款人与联系人手机号重复
@@ -339,12 +339,12 @@
   risk_category: security
   risk_level: HIGH
   verify_field: phone
-  verify_keywords: ["非法", "拦截", "注入", "攻击", "特殊字符", "phone", "手机"]
+  verify_keywords: ["非法", "拦截", "注入", "攻击", "特殊字符", "phone", "手机", "车牌"]
   body:
     applyId: "865634306742032147"
     phone: "JyBPUiAxPTEgLS0="
     captcha: "124214"
-    carNumber: ""
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
   expect_code: 200
 
 - name: RISK-SEC-001 SQL注入-车牌字段

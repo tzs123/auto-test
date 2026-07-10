@@ -55,51 +55,43 @@ def send_card(task: dict):
     template = _color(status)
     pass_n = int(task.get("passed", 0) or 0)
     fail_n = int(task.get("failed", 0) or 0)
+    skip_n = int(task.get("skipped", 0) or 0)
     total = int(task.get("total", 0) or 0)
     rate = f"{pass_n / total * 100:.1f}%" if total else "0%"
 
     MODULE_MAP = {"api": "接口测试", "ui": "UI测试", "all": "全部测试"}
     module_name = MODULE_MAP.get(task.get("module", ""), task.get("module", ""))
 
+    stats_line = f"**总计：** {total}　**通过：** {pass_n}　**失败：** {fail_n}　**跳过：** {skip_n}"
+
     elements = [
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**项目：** {project_name or project_id}　**模块：** {module_name}"}},
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**状态：** {_status_text(status)}　**通过率：** {rate}"}},
-        {"tag": "div", "text": {"tag": "lark_md",
-         "content": f"**总计：** {total}　**通过：** {pass_n}　**失败：** {fail_n}"}},
+        {"tag": "div", "text": {"tag": "lark_md", "content": stats_line}},
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**耗时：** {task.get('duration', 0)}s　**触发：** {task.get('triggered_by','manual')}"}},
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**开始：** {task.get('started_at','-')}　**结束：** {task.get('finished_at','-')}"}},
     ]
     report_url = task.get("report_url")
-    download_url = task.get("report_download_url")
     actions = []
-    if download_url:
-        actions.append({
-            "tag": "button",
-            "text": {"tag": "plain_text", "content": "📄 下载静态报告(pytest-html)"},
-            "url": download_url, "type": "primary",
-        })
     if report_url:
         actions.append({
             "tag": "button",
-            "text": {"tag": "plain_text", "content": "📊 Allure报告(在线)"},
-            "url": report_url, "type": "default",
+            "text": {"tag": "plain_text", "content": "📊 查看Allure报告"},
+            "url": report_url, "type": "primary",
         })
     if actions:
         elements.append({"tag": "action", "actions": actions})
-        if download_url:
-            elements.append({"tag": "div", "text": {"tag": "lark_md",
-             "content": "💡 静态报告下载后双击用浏览器打开即可，无需服务；Allure报告需服务在线"}})
 
     body = {
         "msg_type": "interactive",
         "card": {
             "header": {
                 "title": {"tag": "plain_text",
-                          "content": f"🚀 测试执行报告 - {task.get('id','')[:8]}"},
+                          "content": "🚀 测试执行报告"},
                 "template": template,
             },
             "elements": elements,

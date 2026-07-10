@@ -323,19 +323,6 @@ def task_screenshots(tid: str):
     return {"task_id": tid, "screenshots": [f"/screenshots/{tid}/{f}" for f in files]}
 
 
-@app.get("/api/tasks/{tid}/report/download")
-def task_report_download(tid: str):
-    """下载 pytest-html 静态报告，双击即可查看，无需服务。"""
-    report_html = os.path.join(settings.REPORT_DIR, "tasks", tid, "report", "pytest_report.html")
-    if not os.path.exists(report_html):
-        raise HTTPException(404, "报告不存在，请先执行任务")
-    return FileResponse(
-        report_html,
-        media_type="text/html",
-        headers={"Content-Disposition": f"attachment; filename=pytest-report-{tid}.html"},
-    )
-
-
 # ===== 定时任务 =====
 @app.get("/api/jobs")
 def jobs_list():
@@ -780,12 +767,13 @@ def logs_config_set(enabled: bool = None, retention_days: int = None):
 
 @app.post("/api/feishu/test")
 def feishu_test():
+    host = settings.EXTERNAL_URL or f"http://localhost:{settings.SERVER_CFG.get('port', 8000)}"
     return feishu.send_card({
         "id": "test", "project_id": "测试", "module": "all",
-        "status": "success", "passed": 1, "failed": 0, "total": 1,
+        "status": "success", "passed": 1, "failed": 0, "skipped": 0, "total": 1,
         "duration": 0.1, "triggered_by": "manual",
         "started_at": "-", "finished_at": "-",
-        "report_url": "/",
+        "report_url": f"{host}/",
     })
 
 
@@ -795,6 +783,11 @@ def feishu_send_task(task_id: str):
     if not rows:
         raise HTTPException(404, "任务不存在")
     task_dict = db.to_dict(rows[0])
+    # report_url 在数据库中是相对路径，飞书需要绝对路径
+    report_url = task_dict.get("report_url", "")
+    if report_url and not report_url.startswith("http"):
+        host = settings.EXTERNAL_URL or f"http://localhost:{settings.SERVER_CFG.get('port', 8000)}"
+        task_dict["report_url"] = host + report_url
     return feishu.send_card(task_dict)
 
 

@@ -115,6 +115,10 @@ def init_db():
         conn.execute("ALTER TABLE tasks ADD COLUMN base_url TEXT")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE tasks ADD COLUMN skipped INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
     # 初始化默认知识库配置（仅在表为空时）
     count = conn.execute("SELECT COUNT(*) FROM knowledge_bases").fetchone()[0]
     if count == 0:

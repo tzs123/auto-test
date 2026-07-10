@@ -68,15 +68,10 @@ def _yaml_to_py(case_file: str, project_id: str = "default") -> str:
 
 
 def _build_pytest_args(module: str, case_files: list, results_dir: str,
-                       project_id: str = "default", report_dir: str = "") -> list:
+                       project_id: str = "default") -> list:
     args = [sys.executable, "-m", "pytest", "-v", "--tb=short",
             "-W", "ignore::Warning", f"--alluredir={results_dir}",
             "-p", "no:cacheprovider"]
-    # pytest-html 静态报告（飞书下载用，无需服务）
-    # 放到 results_dir，避免被 allure generate --clean 删除
-    if report_dir:
-        args.append(f"--html={results_dir}/pytest_report.html")
-        args.append("--self-contained-html")
 
     # 并行策略：不同 YAML 文件并行执行，同一文件内用例串行
     # --dist=loadfile: 按测试文件分组分配到不同 worker
@@ -118,7 +113,7 @@ def _build_pytest_args(module: str, case_files: list, results_dir: str,
 
 
 def _parse_results(results_dir: str) -> dict:
-    passed = failed = broken = total = 0
+    passed = failed = broken = skipped = total = 0
     for f in glob.glob(os.path.join(results_dir, "*-result.json")):
         try:
             with open(f, encoding="utf-8") as fp:
@@ -130,9 +125,11 @@ def _parse_results(results_dir: str) -> dict:
                 failed += 1
             elif st == "broken":
                 broken += 1
+            elif st == "skipped":
+                skipped += 1
         except Exception:
             pass
-    return {"passed": passed, "failed": failed + broken, "total": total}
+    return {"passed": passed, "failed": failed + broken, "skipped": skipped, "total": total}
 
 
 def _auto_save_defects(results_dir: str, task: dict):
@@ -272,11 +269,19 @@ def _auto_save_defects(results_dir: str, task: dict):
             elif "Operation not permitted" in error_msg:
                 error_type = "环境错误"
 
-        # 去重：相同 task_id+tc_id 不重复保存
+        # 去重：相同 task_id+tc_id 或 task_id+name 不重复保存
         if tc_id:
             existing = _db.execute(
                 "SELECT id FROM defects WHERE task_id=? AND tc_id=?",
                 (task_id, tc_id), fetch=True
+            )
+            if existing:
+                continue
+        else:
+            # 无 tc_id 时，按 task_id+scenario+title 去重
+            existing = _db.execute(
+                "SELECT id FROM defects WHERE task_id=? AND scenario=? AND title=?",
+                (task_id, scenario, f"{scenario or name}失败"[:100]), fetch=True
             )
             if existing:
                 continue
@@ -566,267 +571,6 @@ def _generate_allure(results_dir: str, report_dir: str) -> bool:
         return False
 
 
-def _generate_static_report(results_dir: str, report_dir: str):
-    """从 allure-results 生成自包含的静态 report.html。
-
-    所有 CSS/JS/数据内联到单个 HTML 文件中，
-    下载后用浏览器直接打开即可查看，无需 HTTP 服务。
-    """
-    import html as _html
-
-    # 读取所有 result 文件
-    test_cases = []
-    suites = {}
-    for f in sorted(glob.glob(os.path.join(results_dir, "*-result.json"))):
-        try:
-            with open(f, encoding="utf-8") as fp:
-                result = json.load(fp)
-        except Exception:
-            continue
-
-        name = result.get("name", "unknown")
-        status = result.get("status", "unknown")
-        duration_ms = (result.get("stop", 0) or 0) - (result.get("start", 0) or 0)
-
-        # 提取 suite / feature / story
-        suite_name = ""
-        feature = ""
-        story = ""
-        for label in result.get("labels", []):
-            ln = label.get("name", "")
-            lv = label.get("value", "")
-            if ln == "suite":
-                suite_name = lv
-            elif ln == "feature":
-                feature = lv
-            elif ln == "story":
-                story = lv
-        if not suite_name:
-            full_name = result.get("fullName", name)
-            suite_name = full_name.rsplit(".", 1)[0] if "." in full_name else "default"
-
-        # 提取 step 和 attachment 信息
-        steps_info = []
-        for step in result.get("steps", []):
-            step_name = step.get("name", "")
-            step_status = step.get("status", "")
-            step_dur = (step.get("stop", 0) or 0) - (step.get("start", 0) or 0)
-            step_attachments = []
-            for att in step.get("attachments", []):
-                att_name = att.get("name", "")
-                att_source = att.get("source", "")
-                # 读取 attachment 内容
-                att_content = ""
-                if att_source:
-                    att_path = os.path.join(results_dir, att_source)
-                    if os.path.exists(att_path):
-                        try:
-                            with open(att_path, encoding="utf-8") as af:
-                                att_content = af.read()[:2000]
-                        except Exception:
-                            pass
-                step_attachments.append({"name": att_name, "content": att_content})
-            steps_info.append({
-                "name": step_name, "status": step_status,
-                "duration": step_dur, "attachments": step_attachments,
-            })
-
-        # 错误信息
-        status_details = result.get("statusDetails", {})
-        error_msg = status_details.get("message", "") or status_details.get("trace", "")
-        if error_msg and len(error_msg) > 3000:
-            error_msg = error_msg[:3000] + "..."
-
-        # parameters
-        params = result.get("parameters", [])
-
-        test_cases.append({
-            "name": name, "status": status, "duration_ms": duration_ms,
-            "suite": suite_name, "feature": feature, "story": story,
-            "steps": steps_info, "error": error_msg, "params": params,
-        })
-
-        if suite_name not in suites:
-            suites[suite_name] = {"passed": 0, "failed": 0, "broken": 0, "skipped": 0, "total": 0}
-        suites[suite_name]["total"] += 1
-        if status in suites[suite_name]:
-            suites[suite_name][status] += 1
-
-    if not test_cases:
-        return
-
-    # 统计
-    total = len(test_cases)
-    passed = sum(1 for t in test_cases if t["status"] == "passed")
-    failed = sum(1 for t in test_cases if t["status"] == "failed")
-    broken = sum(1 for t in test_cases if t["status"] == "broken")
-    skipped = sum(1 for t in test_cases if t["status"] == "skipped")
-    total_duration = sum(t["duration_ms"] for t in test_cases)
-
-    # 读取 environment.properties
-    env_info = {}
-    env_file = os.path.join(results_dir, "environment.properties")
-    if os.path.exists(env_file):
-        for line in open(env_file, encoding="utf-8"):
-            if "=" in line:
-                k, v = line.strip().split("=", 1)
-                env_info[k] = v
-
-    # 转义辅助
-    def _e(s):
-        return _html.escape(str(s))
-
-    def _status_color(s):
-        return {"passed": "#97cc64", "failed": "#fd5454", "broken": "#ffd05b",
-                "skipped": "#aaa"}.get(s, "#aaa")
-
-    def _status_icon(s):
-        return {"passed": "✅", "failed": "❌", "broken": "⚠️", "skipped": "⏭️"}.get(s, "❓")
-
-    # 构建 HTML
-    html_parts = [
-        '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">',
-        '<meta name="viewport" content="width=device-width,initial-scale=1">',
-        '<title>测试报告</title>',
-        '<style>',
-        '*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f5;color:#333;line-height:1.6}',
-        '.container{max-width:1200px;margin:0 auto;padding:20px}',
-        '.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:30px;border-radius:12px;margin-bottom:20px}',
-        '.header h1{font-size:24px;margin-bottom:10px}.stats{display:flex;gap:20px;flex-wrap:wrap}',
-        '.stat{background:rgba(255,255,255,.2);padding:10px 20px;border-radius:8px;text-align:center;min-width:80px}',
-        '.stat .num{font-size:28px;font-weight:bold}.stat .label{font-size:12px;opacity:.8}',
-        '.env-bar{background:#fff;padding:12px 20px;border-radius:8px;margin-bottom:20px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#666}',
-        '.suite{background:#fff;border-radius:8px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}',
-        '.suite-header{padding:14px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}',
-        '.suite-header:hover{background:#fafafa}.suite-name{font-weight:bold;font-size:15px}',
-        '.suite-stats{display:flex;gap:12px;font-size:13px}',
-        '.suite-body{display:none}.suite.open .suite-body{display:block}',
-        '.case{padding:12px 20px;border-bottom:1px solid #f0f0f0}.case:last-child{border:none}',
-        '.case-header{display:flex;align-items:center;gap:8px;cursor:pointer}',
-        '.case-header:hover .case-name{text-decoration:underline}',
-        '.case-name{flex:1;font-size:14px}.case-dur{color:#999;font-size:12px;min-width:60px;text-align:right}',
-        '.case-detail{display:none;margin:8px 0 0 28px;padding:10px;background:#f8f9fa;border-radius:6px;font-size:13px;white-space:pre-wrap;word-break:break-all}',
-        '.case.open .case-detail{display:block}',
-        '.step{margin:4px 0;padding:4px 8px;border-left:3px solid #ddd}.step-name{font-weight:500}',
-        '.att{margin:2px 0 2px 16px;color:#666;font-size:12px}.att-content{background:#eee;padding:6px;border-radius:4px;margin:4px 0;max-height:200px;overflow:auto;white-space:pre-wrap;font-family:monospace;font-size:12px}',
-        '.badge{display:inline-block;padding:2px 8px;border-radius:10px;color:#fff;font-size:11px;font-weight:bold}',
-        '.progress{height:8px;border-radius:4px;overflow:hidden;display:flex;margin-top:10px}',
-        '.progress div{height:100%}',
-        '.filter-bar{margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap}',
-        '.filter-btn{padding:6px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}',
-        '.filter-btn.active{background:#667eea;color:#fff;border-color:#667eea}',
-        '.filter-btn:hover{border-color:#667eea}',
-        '</style></head><body><div class="container">',
-        # Header
-        '<div class="header">',
-        '<h1>📊 测试执行报告</h1>',
-        '<div class="stats">',
-        f'<div class="stat"><div class="num">{total}</div><div class="label">总计</div></div>',
-        f'<div class="stat"><div class="num" style="color:#97cc64">{passed}</div><div class="label">通过</div></div>',
-        f'<div class="stat"><div class="num" style="color:#fd5454">{failed}</div><div class="label">失败</div></div>',
-        f'<div class="stat"><div class="num" style="color:#ffd05b">{broken}</div><div class="label">异常</div></div>',
-        f'<div class="stat"><div class="num" style="color:#aaa">{skipped}</div><div class="label">跳过</div></div>',
-        f'<div class="stat"><div class="num">{total_duration/1000:.1f}s</div><div class="label">耗时</div></div>',
-        '</div>',
-        '<div class="progress">',
-        f'<div style="width:{passed/total*100:.1f}%;background:#97cc64"></div>' if total else '',
-        f'<div style="width:{failed/total*100:.1f}%;background:#fd5454"></div>' if total else '',
-        f'<div style="width:{broken/total*100:.1f}%;background:#ffd05b"></div>' if total else '',
-        '</div></div>',
-    ]
-
-    # Environment info
-    if env_info:
-        html_parts.append('<div class="env-bar">')
-        for k, v in env_info.items():
-            html_parts.append(f'<span><b>{_e(k)}</b>: {_e(v)}</span>')
-        html_parts.append('</div>')
-
-    # Filter bar
-    html_parts.append('<div class="filter-bar">')
-    html_parts.append('<button class="filter-btn active" onclick="filter(\'all\')">全部</button>')
-    html_parts.append('<button class="filter-btn" onclick="filter(\'passed\')">✅ 通过</button>')
-    html_parts.append('<button class="filter-btn" onclick="filter(\'failed\')">❌ 失败</button>')
-    html_parts.append('<button class="filter-btn" onclick="filter(\'broken\')">⚠️ 异常</button>')
-    html_parts.append('</div>')
-
-    # Suites & cases
-    for suite_name in sorted(suites.keys()):
-        s = suites[suite_name]
-        suite_cases = [t for t in test_cases if t["suite"] == suite_name]
-        html_parts.append(f'<div class="suite open" data-suite="{_e(suite_name)}">')
-        html_parts.append(
-            f'<div class="suite-header" onclick="toggleSuite(this)">'
-            f'<span class="suite-name">{_e(suite_name)}</span>'
-            f'<span class="suite-stats">'
-            f'<span class="badge" style="background:#97cc64">{s["passed"]} 通过</span> '
-            f'<span class="badge" style="background:#fd5454">{s["failed"]} 失败</span> '
-            f'<span class="badge" style="background:#ffd05b">{s["broken"]} 异常</span>'
-            f'</span></div>'
-        )
-        html_parts.append('<div class="suite-body">')
-        for tc in suite_cases:
-            icon = _status_icon(tc["status"])
-            color = _status_color(tc["status"])
-            html_parts.append(
-                f'<div class="case" data-status="{tc["status"]}">'
-                f'<div class="case-header" onclick="toggleCase(this)">'
-                f'<span>{icon}</span>'
-                f'<span class="case-name">{_e(tc["name"])}</span>'
-                f'<span class="case-dur">{tc["duration_ms"]:.0f}ms</span>'
-                f'</div>'
-                f'<div class="case-detail">'
-            )
-            # Feature / Story
-            if tc["feature"]:
-                html_parts.append(f'<b>Feature:</b> {_e(tc["feature"])}<br>')
-            if tc["story"]:
-                html_parts.append(f'<b>Story:</b> {_e(tc["story"])}<br>')
-            # Error
-            if tc["error"]:
-                html_parts.append(f'<b style="color:#fd5454">错误信息:</b><br>{_e(tc["error"])}<br><br>')
-            # Steps & attachments
-            for step in tc["steps"]:
-                step_icon = _status_icon(step["status"])
-                html_parts.append(
-                    f'<div class="step" style="border-left-color:{_status_color(step["status"])}">'
-                    f'{step_icon} <span class="step-name">{_e(step["name"])}</span> '
-                    f'<span style="color:#999;font-size:11px">({step["duration"]:.0f}ms)</span>'
-                )
-                for att in step["attachments"]:
-                    html_parts.append(f'<div class="att">📎 {_e(att["name"])}')
-                    if att["content"]:
-                        html_parts.append(f'<div class="att-content">{_e(att["content"])}</div>')
-                    html_parts.append('</div>')
-                html_parts.append('</div>')
-            html_parts.append('</div></div>')  # case-detail, case
-        html_parts.append('</div></div>')  # suite-body, suite
-
-    # JavaScript
-    html_parts.append("""
-<script>
-function toggleSuite(el){el.parentElement.classList.toggle('open')}
-function toggleCase(el){el.parentElement.classList.toggle('open')}
-function filter(status){
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    event.target.classList.add('active');
-    document.querySelectorAll('.case').forEach(c=>{
-        c.style.display=(status==='all'||c.dataset.status===status)?'':'none';
-    });
-    document.querySelectorAll('.suite').forEach(s=>{
-        const visible=s.querySelectorAll('.case[style=""],.case:not([style])');
-        s.style.display=(status==='all'||s.querySelectorAll('.case[data-status="'+status+'"]').length>0)?'':'none';
-    });
-}
-</script>""")
-    html_parts.append('</div></body></html>')
-
-    # 写入 report.html
-    report_html_path = os.path.join(report_dir, "report.html")
-    with open(report_html_path, "w", encoding="utf-8") as f:
-        f.write("".join(html_parts))
-
-
 def _update_task(task_id: str, **fields):
     cols = ", ".join(f"{k}=?" for k in fields)
     db.execute(f"UPDATE tasks SET {cols} WHERE id=?", tuple(fields.values()) + (task_id,))
@@ -877,7 +621,7 @@ def run_task(task_id: str):
         env["BASE_URL"] = base_url
         log_store.write(task_id, f"🌐 Base URL: {base_url}\n")
 
-    cmd = _build_pytest_args(module, case_files, results_dir, project_id=task["project_id"], report_dir=report_dir)
+    cmd = _build_pytest_args(module, case_files, results_dir, project_id=task["project_id"])
     log_store.write(task_id, f"$ {' '.join(cmd)}\n\n")
 
     start = time.time()
@@ -922,18 +666,6 @@ def run_task(task_id: str):
             log_store.write(task_id, f"⚠️ 自动保存缺陷失败: {e}\n")
     report_ok = _generate_allure(results_dir, report_dir)
 
-    # 把 pytest-html 报告从 results_dir 复制到 report_dir
-    pytest_html_src = os.path.join(results_dir, "pytest_report.html")
-    if os.path.exists(pytest_html_src):
-        shutil.copy2(pytest_html_src, os.path.join(report_dir, "pytest_report.html"))
-
-    # 独立生成静态报告，不影响主 Allure 报告
-    if report_ok:
-        try:
-            _generate_static_report(results_dir, report_dir)
-        except Exception as e:
-            log_store.write(task_id, f"⚠️ 静态报告生成失败: {e}\n")
-    
     if report_ok:
         # 使用相对路径，无论用户通过 localhost / 局域网IP / 域名访问都能打开
         report_url = f"/report/tasks/{task_id}/report/"
@@ -945,6 +677,7 @@ def run_task(task_id: str):
         status=status,
         passed=stats["passed"],
         failed=stats["failed"],
+        skipped=stats["skipped"],
         total=stats["total"],
         duration=duration,
         finished_at=finished_at,
@@ -959,18 +692,12 @@ def run_task(task_id: str):
     )
     if report_ok:
         log_store.write(task_id, f"📊 报告: {report_url}\n")
-        # 离线报告下载链接（zip 打包，服务关闭后也可查看）
-        host = settings.EXTERNAL_URL or f"http://localhost:{settings.SERVER_CFG.get('port', 8000)}"
-        download_url = f"{host}/api/tasks/{task_id}/report/download"
-        log_store.write(task_id, f"📥 离线报告下载: {download_url}\n")
 
     # 飞书通知：飞书是外部应用，必须用绝对路径
     feishu_card_data = dict(final) if final else {}
     if report_ok:
         host = settings.EXTERNAL_URL or f"http://localhost:{settings.SERVER_CFG.get('port', 8000)}"
         feishu_card_data["report_url"] = f"{host}/report/tasks/{task_id}/report/"
-        # 下载链接：下载 report.html，双击即可查看，无需服务
-        feishu_card_data["report_download_url"] = f"{host}/api/tasks/{task_id}/report/download"
     feishu.send_card(feishu_card_data)
     return final
 
