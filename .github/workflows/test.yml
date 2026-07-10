@@ -3,6 +3,7 @@ name: pytest allure report
 
 on:
   workflow_dispatch:
+
   push:
     branches:
       - main
@@ -23,11 +24,17 @@ jobs:
     steps:
 
 
+    # =========================
+    # 1. 拉取代码
+    # =========================
     - name: Checkout
       uses: actions/checkout@v4
 
 
 
+    # =========================
+    # 2. Python环境
+    # =========================
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
@@ -35,82 +42,126 @@ jobs:
 
 
 
-    - name: Check Python
+    # =========================
+    # 3. 环境检查
+    # =========================
+    - name: Check Environment
       run: |
+        echo "====== Python ======"
+        which python3
         python3 --version
+
+        echo "====== Pip ======"
         pip3 --version
 
+        echo "====== Allure ======"
+        allure --version
 
 
+
+    # =========================
+    # 4. 安装依赖
+    # =========================
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip
         pip3 install -r requirements.txt
 
 
 
-    - name: Install playwright
+    # =========================
+    # 5. 安装 Playwright
+    # =========================
+    - name: Install Playwright
       run: |
         playwright install chromium
 
 
 
-    - name: Check Allure
-      run: |
-        allure --version
-
-
-
+    # =========================
+    # 6. 执行测试
+    # =========================
     - name: Run Test
       continue-on-error: true
       run: |
+
+        rm -rf allure-results
+        mkdir allure-results
+
+
         pytest \
-        --alluredir=allure-results \
-        -v
+        --alluredir=allure-results
 
 
 
+        echo "====== Allure Result Files ======"
+
+        ls -la allure-results
+
+
+
+    # =========================
+    # 7. 生成Allure报告
+    # =========================
     - name: Generate Allure Report
       if: always()
       run: |
+
+        rm -rf reports
+
         mkdir -p reports
-        allure generate allure-results \
+
+
+        allure generate \
+        allure-results \
         -o reports/allure-report \
         --clean
 
 
 
+    # =========================
+    # 8. 检查报告
+    # =========================
     - name: Check Allure Report
       if: always()
       run: |
+
+        echo "====== Report ======"
+
         ls -la reports
-        ls -la reports/allure-report
+
+        echo "====== HTML ======"
+
+        find reports/allure-report -maxdepth 2 -type f | head -20
 
 
 
-    - name: Upload allure report
+    # =========================
+    # 9. 保存Artifact
+    # =========================
+    - name: Upload Allure Report
       if: always()
       uses: actions/upload-artifact@v4
       with:
+
         name: allure-report
+
         path: reports/allure-report
 
-    - name: Upload test artifacts
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-artifacts
-        path: |
-          screenshots
-          logs
-          videos
+        retention-days: 7
 
 
+
+    # =========================
+    # 10. 发布GitHub Pages
+    # =========================
     - name: Deploy Allure Report
       if: always()
       uses: peaceiris/actions-gh-pages@v4
+
       with:
+
         github_token: ${{ secrets.GITHUB_TOKEN }}
+
         publish_dir: reports/allure-report
+
         publish_branch: gh-pages
-        keep_files: false
