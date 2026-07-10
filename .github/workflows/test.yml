@@ -46,25 +46,32 @@ jobs:
         playwright install chromium
 
 
-    # 执行自动化
+
+    # 执行测试
     - name: Run Test
       run: |
         chmod +x run.sh
         ./run.sh
-
-
-    # 保存Allure结果
-    - name: Upload allure results
+    
+    
+    # 检查报告
+    - name: Check Allure Report
+      if: always()
+      run: |
+        ls -la reports
+        ls -la reports/allure-report
+    
+    
+    # 上传
+    - name: Upload allure report
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: allure-results
-        path: |
-          reports/allure-results
-          reports/allure-report
-        retention-days: 7
-
-
+        name: allure-report
+        path: reports/allure-report
+    
+    
+    # 发布 Pages
     - name: Deploy Allure Report
       if: always()
       uses: peaceiris/actions-gh-pages@v4
