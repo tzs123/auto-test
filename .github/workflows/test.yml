@@ -84,6 +84,22 @@ jobs:
         path: reports/allure-report
 
 
+    - name: Check Allure
+      if: always()
+      run: |
+
+        pwd
+
+        ls -la
+
+        echo "==== reports ===="
+
+        ls -la reports
+
+        echo "==== allure ===="
+
+        ls -la reports/allure-report
+
 
     - name: Deploy Allure Report
       if: always()
@@ -96,7 +112,7 @@ jobs:
         publish_dir: reports/allure-report
 
         publish_branch: gh-pages
-
+        force_orphan: true
 
 
     - name: Upload failed videos
