@@ -1,0 +1,107 @@
+
+# ========== 文件上传接口 - 正向正常流程 ==========
+
+- name: 上传身份证正面-正常
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "865634306742032147"
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+
+- name: 上传身份证反面-正常
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "865634306742032147"
+    idCardType: "2"
+  files:
+    file: "tests/fixtures/身份证反面.jpg"
+  expect_code: 200
+
+# ========== 文件上传接口 - 反向异常入参 ==========
+
+- name: 上传身份证-applyId不存在
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "999999999999999999"
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+- name: 上传身份证-idCardType不存在
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "865634306742032147"
+    idCardType: "3"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+# ========== 文件上传接口 - 边界极值 ==========
+
+- name: 上传身份证-applyId为空
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: ""
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+- name: 上传身份证-idCardType为0
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "865634306742032147"
+    idCardType: "0"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+# ========== 文件上传接口 - 非法参数 ==========
+
+- name: 上传身份证-applyId含特殊字符
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "!@#$%"
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+- name: 上传身份证-applyId含SQL注入
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "' OR 1=1 --"
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false
+
+# ========== 文件上传接口 - 安全/性能/兼容性 ==========
+
+- name: 上传身份证-超长applyId
+  path: /jdy/apply/api/v1/business/upload/idCard
+  method: POST
+  params:
+    applyId: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    idCardType: "1"
+  files:
+    file: "tests/fixtures/身份证正面.jpeg"
+  expect_code: 200
+  expect_success: false

@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自动化测试可视化平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .nav-item{transition:all .15s;cursor:pointer;}
+  .nav-item.active{background:#4f46e5;color:#fff;}
+  .nav-item:hover:not(.active){background:#eef2ff;}
+  textarea.editor{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;tab-size:2;}
+  .log-box{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;line-height:1.5;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
+  ::-webkit-scrollbar-track{background:#f1f5f9;}
+  .badge{padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;}
+  .tab-btn{padding:6px 16px;border-bottom:2px solid transparent;cursor:pointer;font-size:14px;color:#64748b;transition:all .15s;}
+  .tab-btn.active{color:#4f46e5;border-bottom-color:#4f46e5;font-weight:600;}
+  .tab-btn:hover:not(.active){color:#4f46e5;}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+<div class="flex h-screen overflow-hidden">
+
+  <!-- 侧边栏 -->
+  <aside class="w-56 bg-white border-r flex flex-col flex-shrink-0">
+    <div class="p-4 border-b">
+      <h1 class="text-lg font-bold text-indigo-600">🚀 测试平台</h1>
+      <p class="text-xs text-slate-400 mt-1">YAML 数据驱动</p>
+    </div>
+    <!-- 全局项目选择器 -->
+    <div class="px-4 py-2 border-b">
+      <label class="text-xs text-slate-400">当前项目</label>
+      <select id="globalProj" class="w-full border rounded px-2 py-1 text-sm" onchange="switchProject()"></select>
+    </div>
+    <nav class="flex-1 py-2" id="nav">
+      <div class="nav-item px-4 py-3 flex items-center gap-2 active" data-page="dashboard">📊 概览</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="projects">📁 项目管理</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="cases">📝 用例管理</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="run">▶ 执行测试</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="tasks">📋 任务列表</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="analysis">📊 结果分析</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="defects">🐛 缺陷库</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="knowledge">🧠 知识库</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="jobs">⏰ 定时任务</div>
+      <div class="nav-item px-4 py-3 flex items-center gap-2" data-page="settings">⚙ 设置</div>
+    </nav>
+    <div class="p-3 border-t text-xs text-slate-400">
+      <div id="sysInfo">连接中...</div>
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="flex-1 overflow-auto p-6" id="main"></main>
+</div>
+
+<!-- 通用模态框 -->
+<div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto">
+    <div class="flex justify-between items-center p-4 border-b">
+      <h3 id="modalTitle" class="font-bold text-lg"></h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="modalBody" class="p-4"></div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const $ = s => document.querySelector(s);
+const main = $('#main');
+
+// ===== 工具 =====
+async function req(path, opts={}){
+  const r = await fetch(API+path, {headers:{'Content-Type':'application/json'}, ...opts});
+  if(!r.ok){ const e = await r.json().catch(()=>({detail:r.statusText})); throw new Error(e.detail||'error'); }
+  return r.json();
+}
+const esc = s => String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const badge = s => {
+  const c = {success:'bg-green-100 text-green-700',failed:'bg-red-100 text-red-700',
+             running:'bg-blue-100 text-blue-700',pending:'bg-amber-100 text-amber-700',
+             stopped:'bg-orange-100 text-orange-700'}[s]||'bg-slate-100 text-slate-600';
+  return `<span class="badge ${c}">${s}</span>`;
+};
+const moduleLabel = m => ({api:'接口测试',ui:'UI测试',all:'全部测试'}[m]||m);
+
+// SSE 日志流连接（全局，关闭模态框时断开）
+let _logEventSource = null;
+
+// ===== 全局项目选择器 =====
+let currentProject = 'default';
+async function loadGlobalProj(){
+  const projects = await req('/projects');
+  const sel = document.getElementById('globalProj');
+  if(!sel) return;
+  sel.innerHTML = projects.map(p => `<option value="${p.id}" ${p.id===currentProject?'selected':''}>${esc(p.name)}</option>`).join('');
+}
+function switchProject(){
+  currentProject = document.getElementById('globalProj').value;
+  const active = document.querySelector('.nav-item.active');
+  if(active) pages[active.dataset.page]();
+}
+
+function openModal(title, body){
+  $('#modalTitle').textContent = title;
+  $('#modalBody').innerHTML = body;
+  $('#modal').classList.remove('hidden');
+  $('#modal').classList.add('flex');
+}
+function closeModal(){
+  if(_logEventSource){ _logEventSource.close(); _logEventSource=null; }
+  $('#modal').classList.add('hidden');
+  $('#modal').classList.remove('flex');
+}
+$('#modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal(); });
+
+// ===== 路由 =====
+const pages = {dashboard,projects,cases,run,tasks,analysis,defects,knowledge,jobs,settings};
+let _pageRefreshTimer = null;  // 页面级自动刷新定时器
+function clearPageRefresh(){
+  if(_pageRefreshTimer){ clearInterval(_pageRefreshTimer); _pageRefreshTimer=null; }
+}
+document.querySelectorAll('.nav-item').forEach(el=>{
+  el.onclick = ()=>{
+    clearPageRefresh();  // 切换页面前清除上一个页面的定时器
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+    pages[el.dataset.page]();
+  };
+});
+
+// ===== 概览 =====
+async function dashboard(){
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-6">📊 平台概览</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="cards"></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white p-4 rounded-lg shadow"><h3 class="font-semibold mb-3">任务状态分布</h3><div id="chart1" style="height:280px"></div></div>
+      <div class="bg-white p-4 rounded-lg shadow"><h3 class="font-semibold mb-3">最近任务</h3><div id="recent" class="space-y-2 text-sm"></div></div>
+    </div>`;
+  try{
+    const s = await req('/status');
+    const cards = [
+      ['Redis 队列', s.redis?'✅ 在线':'❌ 离线', s.redis?'text-green-600':'text-red-600'],
+      ['队列长度', s.queue_length, 'text-indigo-600'],
+      ['项目数', s.project_count, 'text-indigo-600'],
+      ['定时任务', s.job_count, 'text-indigo-600'],
+    ];
+    $('#cards').innerHTML = cards.map(c=>`
+      <div class="bg-white p-4 rounded-lg shadow">
+        <div class="text-sm text-slate-500">${c[0]}</div>
+        <div class="text-2xl font-bold mt-1 ${c[2]}">${c[1]}</div>
+      </div>`).join('');
+
+    const stats = s.task_stats;
+    const data = Object.entries(stats).map(([n,v])=>({name:n,value:v}));
+    if(data.length){
+      const ch = echarts.init($('#chart1'));
+      ch.setOption({tooltip:{},legend:{bottom:0},
+        series:[{type:'pie',radius:['40%','70%'],data,
+          itemStyle:{borderColor:'#fff',borderWidth:2}}]});
+    } else $('#chart1').innerHTML='<div class="text-center text-slate-400 py-10">暂无任务数据</div>';
+
+    const recent = await req('/tasks?limit=8');
+    $('#recent').innerHTML = recent.length ? recent.map(t=>`
+      <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded">
+        <span class="font-mono text-xs">${t.id}</span>
+        ${badge(t.status)}
+        <span class="text-slate-500 text-xs">${t.passed||0}/${t.total||0}</span>
+        <span class="text-slate-400 text-xs">${t.started_at||'-'}</span>
+      </div>`).join('') : '<div class="text-slate-400 text-center py-6">无任务</div>';
+  }catch(e){ main.innerHTML += `<p class="text-red-500">${e.message}</p>`; }
+}
+
+// ===== 项目管理 =====
+async function projects(){
+  const list = await req('/projects');
+  // 获取每个项目统计
+  const statsMap = {};
+  await Promise.all(list.map(async p => {
+    try{ statsMap[p.id] = await req(`/projects/${p.id}/stats`); }catch{ statsMap[p.id] = {case_count:0,page_count:0,script_count:0}; }
+  }));
+  main.innerHTML = `
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">📁 项目管理</h2>
+      <button onclick="projectForm()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">+ 新增项目</button>
+    </div>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-left">
+          <tr><th class="p-3">ID</th><th class="p-3">名称</th><th class="p-3">描述</th><th class="p-3">Base URL</th><th class="p-3">用例目录</th><th class="p-3">缺陷库路径</th><th class="p-3">Pages</th><th class="p-3">用例数</th><th class="p-3">脚本数</th><th class="p-3">操作</th></tr>
+        </thead><tbody>${list.map(p=>{const st=statsMap[p.id]||{};return`
+          <tr class="border-t hover:bg-slate-50">
+            <td class="p-3 font-mono text-xs">${p.id}</td>
+            <td class="p-3 font-semibold">${esc(p.name)}</td>
+            <td class="p-3 text-slate-500">${esc(p.description||'-')}</td>
+            <td class="p-3 text-xs text-slate-500">${esc(p.base_url||'-')}</td>
+            <td class="p-3 font-mono text-xs">${esc(p.case_dir)}</td>
+            <td class="p-3 font-mono text-xs text-indigo-600">${esc(p.defect_xlsx_path||'-')}</td>
+            <td class="p-3 text-center"><span class="badge bg-purple-100 text-purple-700">${st.page_count||0}</span></td>
+            <td class="p-3 text-center"><span class="badge bg-blue-100 text-blue-700">${st.case_count||0}</span></td>
+            <td class="p-3 text-center"><span class="badge bg-green-100 text-green-700">${st.script_count||0}</span></td>
+            <td class="p-3">
+              <button onclick="projectForm('${p.id}')" class="text-indigo-600 hover:underline mr-2">编辑</button>
+              ${p.id!=='default'?`<button onclick="delProject('${p.id}')" class="text-red-600 hover:underline">删除</button>`:''}
+            </td>
+          </tr>`}).join('')}</tbody></table></div>`;
+}
+async function projectForm(id){
+  let p = {name:'',description:'',base_url:'',case_dir:'',defect_xlsx_path:'',envs:{}};
+  if(id) p = await req(`/projects/${id}`);
+  const envs = p.envs || {};
+  openModal(id?'编辑项目':'新增项目', `
+    <div class="space-y-3">
+      <div><label class="block text-sm mb-1">项目名称 *</label><input id="f_name" class="w-full border rounded px-3 py-2" value="${esc(p.name)}"></div>
+      <div><label class="block text-sm mb-1">描述</label><input id="f_desc" class="w-full border rounded px-3 py-2" value="${esc(p.description)}"></div>
+      <div class="bg-indigo-50 border border-indigo-200 rounded p-3">
+        <label class="block text-sm mb-2 font-semibold">🌐 各环境 Base URL（执行测试时选择对应环境）</label>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 w-16">test</span>
+            <input id="f_env_test" class="flex-1 border rounded px-3 py-2 font-mono text-sm" value="${esc(envs.test||p.base_url||'')}" placeholder="http://test.example.com">
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 w-16">staging</span>
+            <input id="f_env_staging" class="flex-1 border rounded px-3 py-2 font-mono text-sm" value="${esc(envs.staging||'')}" placeholder="http://staging.example.com">
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 w-16">prod</span>
+            <input id="f_env_prod" class="flex-1 border rounded px-3 py-2 font-mono text-sm" value="${esc(envs.prod||'')}" placeholder="http://prod.example.com">
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">说明：执行测试时会根据所选环境自动传递对应的 Base URL 给测试用例（环境变量 BASE_URL）</p>
+      </div>
+      <div><label class="block text-sm mb-1">默认 Base URL（兼容旧代码，留空则使用 test 环境）</label><input id="f_url" class="w-full border rounded px-3 py-2" value="${esc(p.base_url)}"></div>
+      <div><label class="block text-sm mb-1">用例目录（留空自动生成 cases/&lt;id&gt;）</label><input id="f_dir" class="w-full border rounded px-3 py-2" value="${esc(p.case_dir||'')}" placeholder="自动"></div>
+      <div><label class="block text-sm mb-1">缺陷库 xlsx 路径（执行测试后缺陷自动保存到此文件）</label><input id="f_defect_path" class="w-full border rounded px-3 py-2" value="${esc(p.defect_xlsx_path||'')}" placeholder="如 /Users/tanzsongsen/Documents/缺陷库.xlsx"></div>
+      <button onclick="saveProject('${id||''}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full">保存</button>
+    </div>`);
+}
+async function saveProject(id){
+  // 构造 envs 对象（只包含非空的 URL）
+  const envs = {};
+  const testUrl = $('#f_env_test').value.trim();
+  const stagingUrl = $('#f_env_staging').value.trim();
+  const prodUrl = $('#f_env_prod').value.trim();
+  if(testUrl) envs.test = testUrl;
+  if(stagingUrl) envs.staging = stagingUrl;
+  if(prodUrl) envs.prod = prodUrl;
+  const body = {
+    name:$('#f_name').value,
+    description:$('#f_desc').value,
+    base_url:$('#f_url').value || testUrl,  // 兼容字段
+    case_dir:$('#f_dir').value||null,
+    defect_xlsx_path:$('#f_defect_path').value||'',
+    envs: envs
+  };
+  if(id) await req(`/projects/${id}`,{method:'PUT',body:JSON.stringify(body)});
+  else await req('/projects',{method:'POST',body:JSON.stringify(body)});
+  closeModal(); projects(); loadGlobalProj();
+}
+async function delProject(id){
+  if(!confirm('确认删除项目及其所有用例/任务/定时任务/缺陷记录及对应文件夹？')) return;
+  await req(`/projects/${id}`,{method:'DELETE'});
+  // 如果删除的是当前项目，切回默认项目
+  if(currentProject === id){ currentProject = 'default'; }
+  // 刷新项目列表 + 全局选择器 + 当前页面数据
+  await loadGlobalProj();
+  const sel = document.getElementById('globalProj');
+  if(sel) sel.value = currentProject;
+  projects();
+}
+
+// ===== 用例管理 =====
+let curModule='api', curCaseTab='cases';
+async function cases(){
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-4">📝 用例管理</h2>
+    <!-- Tabs -->
+    <div class="flex border-b mb-4 gap-1">
+      <div class="tab-btn active" data-tab="cases" onclick="switchCaseTab('cases')">📄 用例 (YAML)</div>
+      <div class="tab-btn" data-tab="pages" onclick="switchCaseTab('pages')">📑 Pages</div>
+      <div class="tab-btn" data-tab="scripts" onclick="switchCaseTab('scripts')">🔧 脚本</div>
+    </div>
+    <!-- 工具栏 -->
+    <div id="caseToolbar" class="flex gap-3 items-center mb-4 bg-white p-3 rounded-lg shadow"></div>
+    <!-- 内容区 -->
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-4 bg-white rounded-lg shadow p-3"><div id="caseList" class="space-y-1 text-sm"></div></div>
+      <div class="col-span-8 bg-white rounded-lg shadow p-3"><div id="caseView"></div></div>
+    </div>`;
+  curCaseTab='cases';
+  renderCaseToolbar();
+  loadCaseList();
+}
+function switchCaseTab(tab){
+  curCaseTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  renderCaseToolbar();
+  loadCaseList();
+}
+function renderCaseToolbar(){
+  const tb = document.getElementById('caseToolbar');
+  if(!tb) return;
+  if(curCaseTab==='cases'){
+    tb.innerHTML = `
+      <label>模块:</label>
+      <select id="caseMod" class="border rounded px-2 py-1" onchange="curModule=this.value;loadCaseList();">
+        <option value="api" ${curModule==='api'?'selected':''}>接口测试 API</option>
+        <option value="ui" ${curModule==='ui'?'selected':''}>UI 测试 UI</option>
+      </select>
+      <button onclick="loadCaseList()" class="bg-slate-600 text-white px-3 py-1 rounded">刷新</button>
+      <button onclick="caseForm()" class="bg-indigo-600 text-white px-3 py-1 rounded ml-auto">+ 新增用例</button>`;
+  } else if(curCaseTab==='pages'){
+    tb.innerHTML = `
+      <button onclick="loadCaseList()" class="bg-slate-600 text-white px-3 py-1 rounded">刷新</button>
+      <button onclick="pageForm()" class="bg-indigo-600 text-white px-3 py-1 rounded ml-auto">+ 新增 Page</button>`;
+  } else {
+    tb.innerHTML = `
+      <button onclick="loadCaseList()" class="bg-slate-600 text-white px-3 py-1 rounded">刷新</button>
+      <button onclick="scriptForm()" class="bg-indigo-600 text-white px-3 py-1 rounded ml-auto">+ 新增脚本</button>`;
+  }
+}
+async function loadCaseList(){
+  const listEl = document.getElementById('caseList');
+  const viewEl = document.getElementById('caseView');
+  if(!listEl) return;
+  viewEl && (viewEl.innerHTML = '<div class="text-slate-400 text-center py-16">← 选择左侧文件查看/编辑</div>');
+  try{
+    if(curCaseTab==='cases'){
+      const list = await req(`/projects/${currentProject}/cases?module=${curModule}`).catch(()=>[]);
+      listEl.innerHTML = list.length ? list.map(c=>`
+        <div class="p-2 rounded hover:bg-indigo-50 cursor-pointer flex justify-between items-center" onclick="viewCase('${c.module}','${c.name}')">
+          <span class="truncate">📄 ${esc(c.name)}</span>
+          <span class="text-xs text-slate-400">${(c.size/1024).toFixed(1)}KB</span>
+        </div>`).join('') : '<div class="text-slate-400 text-center py-8">暂无用例</div>';
+    } else if(curCaseTab==='pages'){
+      const list = await req(`/projects/${currentProject}/pages`).catch(()=>[]);
+      listEl.innerHTML = list.length ? list.map(f=>`
+        <div class="p-2 rounded hover:bg-purple-50 cursor-pointer flex justify-between items-center" onclick="viewPage('${esc(f.name)}')">
+          <span class="truncate">📑 ${esc(f.name)}</span>
+          <span class="text-xs text-slate-400">${(f.size/1024).toFixed(1)}KB</span>
+        </div>`).join('') : '<div class="text-slate-400 text-center py-8">暂无 Page 文件</div>';
+    } else {
+      const list = await req(`/projects/${currentProject}/scripts`).catch(()=>[]);
+      listEl.innerHTML = list.length ? list.map(f=>`
+        <div class="p-2 rounded hover:bg-green-50 cursor-pointer flex justify-between items-center" onclick="viewScript('${esc(f.name)}')">
+          <span class="truncate">🔧 ${esc(f.name)}</span>
+          <span class="text-xs text-slate-400">${(f.size/1024).toFixed(1)}KB</span>
+        </div>`).join('') : '<div class="text-slate-400 text-center py-8">暂无脚本文件</div>';
+    }
+  }catch(e){ listEl.innerHTML = `<div class="text-red-400 text-center py-8">${esc(e.message)}</div>`; }
+}
+
+// -- 用例(YAML) 操作 --
+async function viewCase(module, filename){
+  const c = await req(`/projects/${currentProject}/cases/${module}/${filename}`);
+  $('#caseView').innerHTML = `
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-semibold">${esc(filename)} <span class="badge bg-indigo-100 text-indigo-700">${moduleLabel(module)}</span></h3>
+      <div>
+        <button onclick="editCase('${module}','${filename}')" class="text-indigo-600 hover:underline mr-3">编辑</button>
+        <button onclick="delCase('${module}','${filename}')" class="text-red-600 hover:underline">删除</button>
+      </div>
+    </div>
+    <pre class="bg-slate-900 text-slate-100 p-3 rounded text-xs overflow-auto max-h-[60vh]">${esc(c.content)}</pre>`;
+}
+async function caseForm(filename){
+  let content = '- name: 示例用例\n  path: /api/example\n  method: GET\n  expect_code: 200\n';
+  if(filename){ const c = await req(`/projects/${currentProject}/cases/${curModule}/${filename}`); content = c.content; }
+  openModal(filename?'编辑用例':'新增用例', `
+    <div>
+      <label class="block text-sm mb-1">文件名（.yaml）</label>
+      <input id="c_name" class="w-full border rounded px-3 py-2 mb-3" value="${filename||'test_new.yaml'}" ${filename?'disabled':''}>
+      <label class="block text-sm mb-1">YAML 内容</label>
+      <textarea id="c_content" class="editor w-full border rounded px-3 py-2 h-72 text-xs">${esc(content)}</textarea>
+      <button onclick="saveCase('${filename||''}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full mt-3">保存</button>
+    </div>`);
+}
+async function editCase(module, filename){ caseForm(filename); }
+async function saveCase(filename){
+  const name = $('#c_name').value;
+  const content = $('#c_content').value;
+  await req(`/projects/${currentProject}/cases/${curModule}/${name}`,{method:'POST',body:JSON.stringify({content})});
+  closeModal(); loadCaseList();
+}
+async function delCase(module, filename){
+  if(!confirm('确认删除该用例？')) return;
+  await req(`/projects/${currentProject}/cases/${module}/${filename}`,{method:'DELETE'});
+  loadCaseList();
+}
+
+// -- Pages 操作 --
+async function viewPage(filename){
+  const c = await req(`/projects/${currentProject}/pages/${filename}`);
+  $('#caseView').innerHTML = `
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-semibold">${esc(filename)} <span class="badge bg-purple-100 text-purple-700">Page</span></h3>
+      <div>
+        <button onclick="editPage('${esc(filename)}')" class="text-indigo-600 hover:underline mr-3">编辑</button>
+        <button onclick="delPage('${esc(filename)}')" class="text-red-600 hover:underline">删除</button>
+      </div>
+    </div>
+    <pre class="bg-slate-900 text-slate-100 p-3 rounded text-xs overflow-auto max-h-[60vh]">${esc(c.content)}</pre>`;
+}
+async function pageForm(filename){
+  let content = 'from pages.base_page import BasePage\n\n\nclass NewPage(BasePage):\n    pass\n';
+  if(filename){ const c = await req(`/projects/${currentProject}/pages/${filename}`); content = c.content; }
+  openModal(filename?'编辑 Page':'新增 Page', `
+    <div>
+      <label class="block text-sm mb-1">文件名（.py）</label>
+      <input id="p_name" class="w-full border rounded px-3 py-2 mb-3" value="${filename||'new_page.py'}" ${filename?'disabled':''}>
+      <label class="block text-sm mb-1">Python 内容</label>
+      <textarea id="p_content" class="editor w-full border rounded px-3 py-2 h-72 text-xs">${esc(content)}</textarea>
+      <button onclick="savePage('${filename||''}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full mt-3">保存</button>
+    </div>`);
+}
+async function editPage(filename){ pageForm(filename); }
+async function savePage(filename){
+  const name = $('#p_name').value;
+  const content = $('#p_content').value;
+  await req(`/projects/${currentProject}/pages/${name}`,{method:'POST',body:JSON.stringify({content})});
+  closeModal(); loadCaseList();
+}
+async function delPage(filename){
+  if(!confirm('确认删除该 Page 文件？')) return;
+  await req(`/projects/${currentProject}/pages/${filename}`,{method:'DELETE'});
+  loadCaseList();
+}
+
+// -- Scripts 操作 --
+async function viewScript(name){
+  const c = await req(`/projects/${currentProject}/scripts/${name}`);
+  $('#caseView').innerHTML = `
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-semibold">${esc(name)} <span class="badge bg-green-100 text-green-700">脚本</span></h3>
+      <div>
+        <button onclick="editScript('${esc(name)}')" class="text-indigo-600 hover:underline mr-3">编辑</button>
+        <button onclick="delScript('${esc(name)}')" class="text-red-600 hover:underline">删除</button>
+      </div>
+    </div>
+    <pre class="bg-slate-900 text-slate-100 p-3 rounded text-xs overflow-auto max-h-[60vh]">${esc(c.content)}</pre>`;
+}
+async function scriptForm(name){
+  let content = 'import pytest\nimport allure\n\n\n@allure.feature("example")\ndef test_example():\n    assert True\n';
+  let pathVal = name || 'api/test_new.py';
+  if(name){ const c = await req(`/projects/${currentProject}/scripts/${name}`); content = c.content; }
+  openModal(name?'编辑脚本':'新增脚本', `
+    <div>
+      <label class="block text-sm mb-1">文件路径（如 api/test_new.py）</label>
+      <input id="s_name" class="w-full border rounded px-3 py-2 mb-3" value="${esc(pathVal)}" ${name?'disabled':''}>
+      <label class="block text-sm mb-1">Python 内容</label>
+      <textarea id="s_content" class="editor w-full border rounded px-3 py-2 h-72 text-xs">${esc(content)}</textarea>
+      <button onclick="saveScript('${name||''}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full mt-3">保存</button>
+    </div>`);
+}
+async function editScript(name){ scriptForm(name); }
+async function saveScript(name){
+  const pathVal = $('#s_name').value;
+  const content = $('#s_content').value;
+  await req(`/projects/${currentProject}/scripts/${pathVal}`,{method:'POST',body:JSON.stringify({content})});
+  closeModal(); loadCaseList();
+}
+async function delScript(name){
+  if(!confirm('确认删除该脚本？')) return;
+  await req(`/projects/${currentProject}/scripts/${name}`,{method:'DELETE'});
+  loadCaseList();
+}
+
+// ===== 执行测试 =====
+// 当前项目环境配置缓存（run 页面使用）
+let _runProjectEnvs = {};
+let _runProjectBaseUrl = '';
+
+async function run(){
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-4">▶ 执行测试（单/批量 + 负载均衡）</h2>
+    <div class="bg-white p-4 rounded-lg shadow mb-4">
+      <div class="grid grid-cols-3 gap-4 mb-3">
+        <div><label class="block text-sm mb-1">模块</label>
+          <select id="runMod" class="w-full border rounded px-3 py-2">
+            <option value="all">全部测试</option><option value="api">接口测试</option><option value="ui">UI测试</option>
+          </select></div>
+        <div><label class="block text-sm mb-1">环境</label>
+          <select id="runEnv" class="w-full border rounded px-3 py-2">
+            <option value="test">测试环境</option><option value="staging">预发环境</option><option value="prod">生产环境</option>
+          </select></div>
+        <div><label class="block text-sm mb-1">Base URL（自动跟随环境）</label>
+          <div id="runBaseUrlBox" class="w-full border rounded px-3 py-2 bg-slate-50 font-mono text-xs text-slate-600 break-all min-h-[38px] flex items-center">加载中...</div>
+        </div>
+      </div>
+      <div class="bg-indigo-50 border border-indigo-200 rounded p-2 mb-3 text-xs text-slate-600">
+        💡 Base URL 来自当前项目配置，切换环境会自动切换对应的 Base URL，并通过环境变量 <code class="bg-white px-1 rounded">BASE_URL</code> 传递给测试用例
+      </div>
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-slate-500">当前项目：<b id="runProjLabel"></b> | 选择指定用例（多选，不选=执行该模块全部）：</span>
+        <span>
+          <button onclick="toggleAllPick(true)" class="text-xs text-indigo-600 hover:underline mr-2">全选</button>
+          <button onclick="toggleAllPick(false)" class="text-xs text-indigo-600 hover:underline">取消全选</button>
+        </span>
+      </div>
+      <div id="casePick" class="grid grid-cols-3 gap-2 max-h-60 overflow-auto border rounded p-2"></div>
+      <div class="flex gap-2 mt-3">
+        <button onclick="runAll()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex-1">▶ 执行全部</button>
+        <button onclick="runSelected()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 flex-1">▶ 执行选中（批量）</button>
+      </div>
+    </div>
+    <div id="runResult"></div>`;
+  try{
+    const proj = await req(`/projects/${currentProject}`);
+    _runProjectEnvs = proj.envs || {};
+    _runProjectBaseUrl = proj.base_url || '';
+    const label = document.getElementById('runProjLabel');
+    if(label) label.textContent = proj.name || currentProject;
+  }catch{
+    _runProjectEnvs = {};
+    _runProjectBaseUrl = '';
+  }
+  $('#runEnv').onchange = updateRunBaseUrl;
+  updateRunBaseUrl();
+  $('#runMod').onchange = loadPick;
+  loadPick();
+}
+
+// 根据当前选择的环境，更新 Base URL 显示
+function updateRunBaseUrl(){
+  const env = $('#runEnv').value;
+  const envs = _runProjectEnvs || {};
+  let url = envs[env] || '';
+  // 兜底：如果该环境未配置但 test 环境有值，回退到 test
+  if(!url && env !== 'test' && envs.test) url = envs.test;
+  // 再兜底：使用项目默认 base_url
+  if(!url) url = _runProjectBaseUrl || '';
+  const box = $('#runBaseUrlBox');
+  if(url){
+    box.innerHTML = `<span class="text-green-600">✓</span> <span>${esc(url)}</span>`;
+    box.className = 'w-full border rounded px-3 py-2 bg-green-50 font-mono text-xs text-green-700 break-all min-h-[38px] flex items-center gap-2';
+  }else{
+    box.innerHTML = `<span class="text-amber-600">⚠ 当前环境未配置 Base URL，将使用测试用例默认地址</span>`;
+    box.className = 'w-full border rounded px-3 py-2 bg-amber-50 font-mono text-xs text-amber-700 break-all min-h-[38px] flex items-center';
+  }
+}
+
+// 获取当前选择的 Base URL（用于执行测试时传给后端）
+function getCurrentRunBaseUrl(){
+  const env = $('#runEnv').value;
+  const envs = _runProjectEnvs || {};
+  let url = envs[env] || '';
+  if(!url && env !== 'test' && envs.test) url = envs.test;
+  if(!url) url = _runProjectBaseUrl || '';
+  return url;
+}
+async function loadPick(){
+  const mod = $('#runMod').value;
+  let lists = [];
+  if(mod === 'all' || mod === 'api'){
+    const apiList = await req(`/projects/${currentProject}/cases?module=api`).catch(()=>[]);
+    lists = lists.concat(apiList.map(c=>({...c, tag: 'api'})));
+  }
+  if(mod === 'all' || mod === 'ui'){
+    const uiList = await req(`/projects/${currentProject}/cases?module=ui`).catch(()=>[]);
+    lists = lists.concat(uiList.map(c=>({...c, tag: 'ui'})));
+  }
+  $('#casePick').innerHTML = lists.length ? lists.map(c=>`
+    <label class="flex items-center gap-2 p-1 hover:bg-slate-50 rounded">
+      <input type="checkbox" value="${c.relative}" class="cpick">
+      <span class="badge ${c.tag==='api'?'bg-blue-100 text-blue-700':'bg-purple-100 text-purple-700'}">${c.tag}</span>
+      <span class="truncate">${esc(c.name)}</span>
+    </label>`).join('')
+    : '<div class="text-slate-400 col-span-3 text-center py-4">该模块无用例</div>';
+}
+function toggleAllPick(checked){
+  document.querySelectorAll('.cpick').forEach(c=>c.checked=checked);
+}
+async function runAll(){
+  const baseUrl = getCurrentRunBaseUrl();
+  const body = {
+    project_id: currentProject,
+    module: $('#runMod').value,
+    case_files: [],
+    env: $('#runEnv').value,
+    base_url: baseUrl
+  };
+  await doRun(body);
+}
+async function runSelected(){
+  const files = [...document.querySelectorAll('.cpick:checked')].map(c=>c.value);
+  if(!files.length){ alert('请先勾选用例'); return; }
+  const baseUrl = getCurrentRunBaseUrl();
+  const body = {
+    project_id: currentProject,
+    module: $('#runMod').value,
+    case_files: files,
+    env: $('#runEnv').value,
+    base_url: baseUrl
+  };
+  await doRun(body);
+}
+async function doRun(body){
+  const r = await req('/run',{method:'POST',body:JSON.stringify(body)});
+  const mode = r.queue ? '已入队（worker 消费）' : '本地同步执行';
+  const usedBaseUrl = r.base_url || body.base_url || '默认（测试用例内置）';
+  $('#runResult').innerHTML = `
+    <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+      <div class="font-semibold">✅ 任务已创建：<span class="font-mono">${r.task_id}</span></div>
+      <div class="text-sm text-slate-500 mt-1">模块：${moduleLabel(body.module)} | 环境：${body.env} | 调度：${mode}</div>
+      <div class="text-sm text-slate-500 mt-1">🌐 Base URL：<span class="font-mono text-indigo-600">${esc(usedBaseUrl)}</span></div>
+      <button onclick="viewTask('${r.task_id}')" class="text-indigo-600 hover:underline mt-2">查看日志与报告 →</button>
+    </div>`;
+}
+
+// ===== 任务列表 =====
+async function tasks(){
+  const projects = await req('/projects');
+  const list = await req(`/tasks?limit=200&project_id=${currentProject}`);
+  const hasRunning = list.some(t => t.status==='running' || t.status==='pending');
+  main.innerHTML = `
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">📋 任务列表</h2>
+      <div class="flex gap-3 items-center">
+        ${hasRunning ? '<span class="text-xs text-green-500">● 有任务进行中</span>' : ''}
+        <span class="text-sm text-slate-500">当前项目：<b>${esc(projects.find(p=>p.id===currentProject)?.name||currentProject)}</b></span>
+        <button onclick="tasks()" class="bg-slate-600 text-white px-3 py-2 rounded hover:bg-slate-700">🔄 刷新</button>
+        <button onclick="batchDelete()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">🗑 批量删除</button>
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow overflow-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-left">
+          <tr><th class="p-3"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th><th class="p-3">任务ID</th><th class="p-3">项目</th><th class="p-3">模块</th><th class="p-3">状态</th>
+          <th class="p-3">通过/总数</th><th class="p-3">耗时</th><th class="p-3">触发</th><th class="p-3">时间</th><th class="p-3">操作</th></tr>
+        </thead><tbody>${list.map(t=>`
+          <tr class="border-t hover:bg-slate-50">
+            <td class="p-3"><input type="checkbox" class="task-check" value="${t.id}"></td>
+            <td class="p-3 font-mono text-xs">${t.id}</td>
+            <td class="p-3">${esc(t.project_name || t.project_id)}</td>
+            <td class="p-3">${moduleLabel(t.module)}</td>
+            <td class="p-3">${badge(t.status)}</td>
+            <td class="p-3">${t.passed||0}/${t.total||0}</td>
+            <td class="p-3">${t.duration||0}s</td>
+            <td class="p-3 text-xs text-slate-500">${esc(t.triggered_by||'-')}</td>
+            <td class="p-3 text-xs text-slate-500">${esc(t.started_at||'-')}</td>
+            <td class="p-3">
+              <button onclick="viewTask('${t.id}')" class="text-indigo-600 hover:underline mr-2">详情</button>
+              ${(t.status==='running'||t.status==='pending')?`<button onclick="stopTask('${t.id}')" class="text-red-600 hover:underline mr-2">⛔ 停止</button>`:''}
+              ${t.report_url?`<a href="${t.report_url}" target="_blank" class="text-green-600 hover:underline">报告</a>`:''}
+            </td>
+          </tr>`).join('')}</tbody></table></div>`;
+  clearPageRefresh();
+}
+function toggleSelectAll(){
+  const checked = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.task-check').forEach(c=>c.checked=checked);
+}
+
+async function batchDelete(){
+  const ids = [...document.querySelectorAll('.task-check:checked')].map(c=>c.value);
+  if(!ids.length){ alert('请先选择要删除的任务'); return; }
+  if(!confirm(`确认删除 ${ids.length} 个任务及其报告？`)) return;
+  const r = await req('/tasks/batch',{method:'DELETE',body:JSON.stringify({task_ids:ids})});
+  alert(`已删除 ${r.deleted} 个任务` + (r.errors.length ? '，失败: '+r.errors.join(', ') : ''));
+  tasks();
+}
+async function stopTask(tid){
+  if(!confirm(`确认停止任务 ${tid}？`)) return;
+  try {
+    const r = await req(`/tasks/${tid}/stop`,{method:'POST'});
+    alert(r.ok ? '✅ 已停止' : '❌ ' + r.msg);
+    tasks();
+  } catch(e) {
+    alert('停止失败: ' + e.message);
+  }
+}
+async function viewTask(tid){
+  const t = await req(`/tasks/${tid}`);
+  const shots = await req(`/tasks/${tid}/screenshots`);
+  if(_logEventSource){ _logEventSource.close(); _logEventSource=null; }
+
+  openModal(`任务 ${tid} 详情`, `
+    <div class="grid grid-cols-2 gap-3 mb-3 text-sm">
+      <div>状态：${badge(t.status)}</div><div>项目：${esc(t.project_id)} / ${moduleLabel(t.module)}</div>
+      <div>通过/总数：${t.passed||0} / ${t.total||0}</div><div>耗时：${t.duration||0}s</div>
+      <div>触发：${esc(t.triggered_by||'-')}</div><div>开始：${esc(t.started_at||'-')}</div>
+      <div>${t.report_url?`<a href="${t.report_url}" target="_blank" class="text-green-600 hover:underline">📊 查看 Allure 报告</a>`:'无报告'}</div>
+    </div>
+    <div class="text-sm font-semibold mb-1">执行日志 <span id="logLiveHint" class="text-green-500 text-xs">● 实时</span></div>
+    <pre id="logArea" class="log-box bg-slate-900 text-slate-100 p-3 rounded h-64 overflow-auto whitespace-pre-wrap"></pre>
+    <div class="text-sm font-semibold mt-3 mb-1">失败截图（${shots.screenshots.length}）</div>
+    <div class="grid grid-cols-3 gap-2 max-h-48 overflow-auto">
+      ${shots.screenshots.length?shots.screenshots.map(s=>`<img src="${s}" class="w-full rounded border cursor-pointer" onclick="window.open('${s}')" title="点击放大">`).join(''):'<div class="text-slate-400 text-xs">无截图</div>'}
+    </div>
+    <button onclick="refreshTask('${tid}')" class="mt-3 text-indigo-600 hover:underline text-sm">🔄 刷新</button>`);
+
+  const logArea = $('#logArea');
+  const isFinished = t.status === 'success' || t.status === 'failed';
+
+  if(isFinished){
+    const log = await req(`/tasks/${tid}/log`);
+    logArea.textContent = log.log || '(无日志)';
+    const hint = $('#logLiveHint');
+    if(hint){ hint.textContent = '✓ 已结束'; hint.className = 'text-slate-400 text-xs'; }
+  } else {
+    const es = new EventSource(`${API}/tasks/${tid}/log/stream`);
+    _logEventSource = es;
+    es.onmessage = function(e){
+      try{
+        const data = JSON.parse(e.data);
+        if(data.log !== undefined){
+          logArea.textContent += data.log;
+          logArea.scrollTop = logArea.scrollHeight;
+        }
+        if(data.finished){
+          const hint = $('#logLiveHint');
+          if(hint){ hint.textContent = '✓ 已结束'; hint.className = 'text-slate-400 text-xs'; }
+          es.close(); _logEventSource = null;
+        }
+        if(data.timeout){
+          const hint = $('#logLiveHint');
+          if(hint){ hint.textContent = '⏱ 连接超时'; hint.className = 'text-amber-500 text-xs'; }
+          es.close(); _logEventSource = null;
+        }
+      }catch(err){}
+    };
+    es.onerror = function(){
+      const hint = $('#logLiveHint');
+      if(hint){ hint.textContent = '⚠ 连接断开'; hint.className = 'text-red-400 text-xs'; }
+      es.close(); _logEventSource = null;
+    };
+  }
+}
+async function refreshTask(tid){ closeModal(); await new Promise(r=>setTimeout(r,100)); viewTask(tid); }
+
+// ===== 定时任务 =====
+async function jobs(){
+  const [list, projects] = await Promise.all([req('/jobs'), req('/projects')]);
+  main.innerHTML = `
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">⏰ 定时任务</h2>
+      <button onclick="jobForm()" class="bg-indigo-600 text-white px-4 py-2 rounded">+ 新增定时</button>
+    </div>
+    <div class="bg-white rounded-lg shadow overflow-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-500 text-left">
+          <tr><th class="p-3">ID</th><th class="p-3">名称</th><th class="p-3">项目</th><th class="p-3">模块</th><th class="p-3">Cron</th><th class="p-3">启用</th><th class="p-3">上次执行</th><th class="p-3">操作</th></tr>
+        </thead><tbody>${list.map(j=>`
+          <tr class="border-t hover:bg-slate-50">
+            <td class="p-3 font-mono text-xs">${j.id}</td>
+            <td class="p-3">${esc(j.name)}</td>
+            <td class="p-3">${esc(j.project_id)}</td>
+            <td class="p-3">${moduleLabel(j.module)}</td>
+            <td class="p-3 font-mono text-xs">${esc(j.cron)}</td>
+            <td class="p-3">${j.enabled?'✅':'❌'}</td>
+            <td class="p-3 text-xs text-slate-500">${esc(j.last_run||'-')}</td>
+            <td class="p-3">
+              <button onclick="jobForm('${j.id}')" class="text-indigo-600 hover:underline mr-2">编辑</button>
+              <button onclick="delJob('${j.id}')" class="text-red-600 hover:underline">删除</button>
+            </td>
+          </tr>`).join('')||'<tr><td colspan="8" class="p-6 text-center text-slate-400">暂无定时任务</td></tr>'}</tbody></table>
+    </div>`;
+}
+async function jobForm(id){
+  const projects = await req('/projects');
+  let j = {project_id:currentProject,name:'',module:'all',case_files:[],cron:'0 0 8 * * ?',enabled:true};
+  if(id) j = await req(`/jobs`).then(l=>l.find(x=>x.id===id))||j;
+  openModal(id?'编辑定时任务':'新增定时任务', `
+    <div class="space-y-3">
+      <div><label class="block text-sm mb-1">名称</label><input id="j_name" class="w-full border rounded px-3 py-2" value="${esc(j.name)}"></div>
+      <div><label class="block text-sm mb-1">项目</label>
+        <select id="j_proj" class="w-full border rounded px-3 py-2">${projects.map(p=>`<option value="${p.id}" ${p.id===j.project_id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
+      <div><label class="block text-sm mb-1">模块</label>
+        <select id="j_mod" class="w-full border rounded px-3 py-2">
+          <option value="all" ${j.module==='all'?'selected':''}>全部</option><option value="api" ${j.module==='api'?'selected':''}>接口</option><option value="ui" ${j.module==='ui'?'selected':''}>UI</option>
+        </select></div>
+      <div><label class="block text-sm mb-1">Cron 表达式（6段：秒 分 时 日 月 周）</label><input id="j_cron" class="w-full border rounded px-3 py-2 font-mono" value="${esc(j.cron)}" placeholder="0 0 8 * * ?（每天8点）"></div>
+      <div><label class="flex items-center gap-2"><input type="checkbox" id="j_en" ${j.enabled?'checked':''}> 启用</label></div>
+      <button onclick="saveJob('${id||''}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full">保存</button>
+    </div>`);
+}
+async function saveJob(id){
+  const body = {name:$('#j_name').value,project_id:$('#j_proj').value,module:$('#j_mod').value,case_files:[],cron:$('#j_cron').value,enabled:$('#j_en').checked};
+  if(id) await req(`/jobs/${id}`,{method:'PUT',body:JSON.stringify(body)});
+  else await req('/jobs',{method:'POST',body:JSON.stringify(body)});
+  closeModal(); jobs();
+}
+async function delJob(id){ if(!confirm('确认删除？'))return; await req(`/jobs/${id}`,{method:'DELETE'}); jobs(); }
+
+// ===== 缺陷库 =====
+let _defectsSelected = new Set();
+async function defects(){
+  _defectsSelected = _defectsSelected || new Set();
+  // 获取当前项目的缺陷库路径
+  let defectPath = '';
+  try {
+    const proj = await req(`/projects/${currentProject}`);
+    defectPath = proj.defect_xlsx_path || '';
+  } catch { defectPath = ''; }
+  main.innerHTML = `
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold">🐛 缺陷库</h2>
+      <div class="flex gap-2 items-center">
+        <button onclick="defects()" class="bg-slate-600 text-white px-3 py-1 rounded hover:bg-slate-700">🔄 刷新</button>
+        ${defectPath ? `<button onclick="defectImportXlsx()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">📥 从 xlsx 导入</button>` : ''}
+        <button onclick="defectBatchDelete()" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">🗑 批量删除</button>
+      </div>
+    </div>
+    ${defectPath ? `
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4 text-sm">
+      <span class="text-slate-600">📁 当前项目缺陷库文件路径：</span>
+      <code class="text-indigo-700 font-mono">${esc(defectPath)}</code>
+      <span class="text-slate-400 text-xs ml-2">（执行测试后缺陷自动保存到此文件）</span>
+    </div>` : `
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm">
+      <span class="text-amber-700">⚠️ 当前项目未配置缺陷库 xlsx 路径，执行测试后不会自动保存到 xlsx 文件。</span>
+      <a href="javascript:document.querySelector('[data-page=\\'projects\\']').click()" class="text-indigo-600 underline ml-2">去配置</a>
+    </div>`}
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex gap-3 mb-4 items-center">
+        <label class="text-sm flex items-center gap-1">
+          <input type="checkbox" id="defectSelectAll" onchange="defectToggleAll(this.checked)"> 全选/取消
+        </label>
+        <span id="defectCount" class="text-sm text-slate-500"></span>
+        <span id="defectSelCount" class="text-sm text-indigo-500"></span>
+      </div>
+      <div id="defectList" class="space-y-2"></div>
+    </div>`;
+  let url = '/defects?limit=200';
+  if(currentProject && currentProject !== 'default') url += `&project_id=${currentProject}`;
+  const list = await req(url).catch(()=>[]);
+  $('#defectCount').textContent = `共 ${list.length} 条`;
+  if(_defectsSelected.size){
+    $('#defectSelCount').textContent = `已选 ${_defectsSelected.size} 条`;
+  }
+  // 同步全选框状态：所有项都已选中时自动勾上
+  const selectAllEl = $('#defectSelectAll');
+  if(selectAllEl){
+    const allSelected = list.length > 0 && list.every(d => _defectsSelected.has(d.id));
+    selectAllEl.checked = allSelected;
+  }
+  if(!list.length){
+    $('#defectList').innerHTML = '<div class="text-center text-slate-400 py-8">暂无缺陷记录</div>';
+  } else {
+    const sevColors = {'高':'bg-red-100 text-red-700','中':'bg-yellow-100 text-yellow-700','低':'bg-blue-100 text-blue-700'};
+    $('#defectList').innerHTML = list.map(d => `
+      <div class="border rounded p-3 hover:bg-slate-50 ${_defectsSelected.has(d.id)?'bg-indigo-50 border-indigo-300':''}">
+        <div class="flex items-start gap-3">
+          <input type="checkbox" ${_defectsSelected.has(d.id)?'checked':''} onchange="defectToggleSel('${d.id}')" class="mt-1"/>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-semibold text-sm">${esc(d.title)}</span>
+              <span class="text-xs px-2 py-0.5 rounded ${sevColors[d.severity]||sevColors['中']}">${esc(d.severity||'中')}</span>
+              ${d.source==='auto'?'<span class="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700">自动</span>':''}
+              ${d.tc_id?`<span class="text-xs text-slate-400">${esc(d.tc_id)}</span>`:''}
+            </div>
+            ${d.scenario?`<div class="text-sm text-slate-600 mt-1">${esc(d.scenario)}</div>`:''}
+            ${d.error_message?`<div class="text-xs text-red-600 mt-1 font-mono bg-red-50 p-2 rounded break-all">${esc(d.error_message).substring(0,300)}</div>`:''}
+            <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
+              <span>📅 ${esc(d.created_at||'')}</span>
+              ${d.task_id?`<a href="javascript:defectViewTask('${d.task_id}')" class="text-indigo-500">📋 任务${d.task_id.substring(0,8)}</a>`:''}
+              ${d.page_url?`<span>🔗 ${esc(d.page_url).substring(0,60)}</span>`:''}
+              <a href="javascript:defectDelete('${d.id}')" class="text-red-500">删除</a>
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+  clearPageRefresh();
+}
+function defectToggleAll(checked){
+  // 全选/取消全选切换：根据当前勾选状态决定是全选还是取消
+  const checkboxes = document.querySelectorAll('#defectList input[type="checkbox"]');
+  if(checked){
+    checkboxes.forEach(cb => {
+      const id = cb.getAttribute('onchange').match(/'([^']+)'/)[1];
+      _defectsSelected.add(id);
+      cb.checked = true;
+    });
+  } else {
+    _defectsSelected.clear();
+    checkboxes.forEach(cb => cb.checked = false);
+  }
+  // 局部更新选中计数和卡片样式，不刷新整个列表
+  const sel = $('#defectSelCount');
+  if(sel){ sel.textContent = _defectsSelected.size ? `已选 ${_defectsSelected.size} 条` : ''; }
+  document.querySelectorAll('#defectList > div').forEach(card => {
+    const cb = card.querySelector('input[type="checkbox"]');
+    if(cb){
+      const id = cb.getAttribute('onchange').match(/'([^']+)'/)[1];
+      if(_defectsSelected.has(id)){ card.classList.add('bg-indigo-50','border-indigo-300'); }
+      else { card.classList.remove('bg-indigo-50','border-indigo-300'); }
+    }
+  });
+}
+function defectToggleSel(id){
+  if(_defectsSelected.has(id)) _defectsSelected.delete(id);
+  else _defectsSelected.add(id);
+  // 局部更新，避免整列表刷新打断勾选
+  const cb = event && event.target;
+  if(cb){
+    const card = cb.closest('.border');
+    if(card){
+      if(_defectsSelected.has(id)){ card.classList.add('bg-indigo-50','border-indigo-300'); }
+      else { card.classList.remove('bg-indigo-50','border-indigo-300'); }
+    }
+    const sel = $('#defectSelCount');
+    if(sel){ sel.textContent = _defectsSelected.size ? `已选 ${_defectsSelected.size} 条` : ''; }
+    // 同步全选框状态
+    const selectAllEl = $('#defectSelectAll');
+    if(selectAllEl){
+      const checkboxes = document.querySelectorAll('#defectList input[type="checkbox"]');
+      const allSelected = checkboxes.length > 0 && [...checkboxes].every(c => c.checked);
+      selectAllEl.checked = allSelected;
+    }
+  } else {
+    defects();
+  }
+}
+async function defectBatchDelete(){
+  if(!_defectsSelected.size){ alert('请先勾选要删除的缺陷'); return; }
+  if(!confirm(`确认删除 ${_defectsSelected.size} 条缺陷？`)) return;
+  await req('/defects',{method:'DELETE',body:JSON.stringify({defect_ids:[..._defectsSelected]})});
+  _defectsSelected.clear();
+  defects();
+}
+async function defectImportXlsx(){
+  if(!confirm('从项目配置的 xlsx 文件导入缺陷到平台？\n（同标题+同 tc_id 的缺陷会自动跳过，不会重复导入）')) return;
+  try{
+    const r = await req(`/defects/import_xlsx?project_id=${currentProject}`,{method:'POST'});
+    alert(`✅ 导入完成\n新增：${r.imported} 条\n文件：${r.path}`);
+    defects();
+  }catch(e){ alert('❌ 导入失败：'+e.message); }
+}
+async function defectDelete(id){
+  if(!confirm('确认删除此缺陷？')) return;
+  await req(`/defects/${id}`,{method:'DELETE'});
+  _defectsSelected.delete(id);
+  defects();
+}
+function defectViewTask(taskId){
+  // 跳转到任务列表并查看日志
+  document.querySelector('[data-page="tasks"]').click();
+  setTimeout(()=>viewLog(taskId), 300);
+}
+
+// ===== 结果分析层 =====
+async function analysis(){
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-4">📊 结果分析层</h2>
+    <p class="text-slate-500 text-sm mb-4">Allure Report + AI 日志分析 + 自动归因（失败原因分类）</p>
+    <!-- 任务选择 -->
+    <div class="flex gap-3 items-center mb-4 bg-white p-3 rounded-lg shadow">
+      <label class="text-sm">选择任务：</label>
+      <select id="analysisTaskSel" class="border rounded px-3 py-1 text-sm flex-1" onchange="loadAnalysis()">
+        <option value="">-- 请选择任务 --</option>
+      </select>
+      <button onclick="loadAnalysis()" class="bg-indigo-600 text-white px-4 py-1 rounded">📊 分析</button>
+    </div>
+    <div id="analysisContent"></div>`;
+  // 加载任务列表
+  const tasks = await req('/tasks?limit=20&project_id=' + currentProject).catch(()=>[]);
+  const sel = $('#analysisTaskSel');
+  sel.innerHTML = '<option value="">-- 请选择任务 --</option>' + tasks.map(t=>
+    `<option value="${t.id}">${t.id} | ${badge(t.status)} | ${t.passed||0}/${t.total||0} | ${t.started_at||''}</option>`
+  ).join('');
+}
+
+async function loadAnalysis(){
+  const taskId = $('#analysisTaskSel').value;
+  const content = $('#analysisContent');
+  if(!taskId){
+    content.innerHTML = '<div class="text-center text-slate-400 py-8">请选择任务</div>';
+    return;
+  }
+  content.innerHTML = '<div class="text-center py-8"><div class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div><p class="mt-2 text-slate-500">正在分析...</p></div>';
+  try{
+    const data = await req(`/analysis/${taskId}`);
+    const s = data.summary;
+    const attr = data.attribution_summary || {};
+    const attrColors = {'代码问题':'bg-red-100 text-red-700','用例数据问题':'bg-orange-100 text-orange-700','环境问题':'bg-yellow-100 text-yellow-700','被测系统缺陷':'bg-purple-100 text-purple-700','断言失败':'bg-blue-100 text-blue-700','其他':'bg-slate-100 text-slate-600','未知':'bg-slate-100 text-slate-600'};
+    content.innerHTML = `
+      <!-- 概览 -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div class="bg-white p-3 rounded-lg shadow text-center">
+          <div class="text-xs text-slate-500">总计</div><div class="text-xl font-bold">${s.total}</div></div>
+        <div class="bg-white p-3 rounded-lg shadow text-center">
+          <div class="text-xs text-slate-500">通过</div><div class="text-xl font-bold text-green-600">${s.passed}</div></div>
+        <div class="bg-white p-3 rounded-lg shadow text-center">
+          <div class="text-xs text-slate-500">失败</div><div class="text-xl font-bold text-red-600">${s.failed}</div></div>
+        <div class="bg-white p-3 rounded-lg shadow text-center">
+          <div class="text-xs text-slate-500">跳过</div><div class="text-xl font-bold text-slate-400">${s.skipped}</div></div>
+        <div class="bg-white p-3 rounded-lg shadow text-center">
+          <div class="text-xs text-slate-500">耗时</div><div class="text-xl font-bold">${data.duration||0}s</div></div>
+      </div>
+      <!-- Allure 报告链接 -->
+      ${data.allure_report_url ? `
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+        <div><span class="text-green-700 font-semibold">📈 Allure Report</span>
+        <p class="text-xs text-slate-500 mt-1">${data.allure_report_url}</p></div>
+        <a href="${data.allure_report_url}" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">查看报告</a>
+      </div>` : ''}
+      <!-- 顶部建议 -->
+      ${data.top_suggestion ? `
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+        <span class="text-amber-700 font-semibold">💡 最优先修复建议</span>
+        <p class="text-sm text-slate-600 mt-1">${esc(data.top_suggestion)}</p>
+      </div>` : ''}
+      <!-- 归因汇总 -->
+      <div class="bg-white rounded-lg shadow p-4 mb-4">
+        <h3 class="font-semibold mb-3">🎯 自动归因汇总</h3>
+        ${Object.keys(attr).length ? `
+        <div class="flex gap-2 flex-wrap mb-3">
+          ${Object.entries(attr).map(([k,v])=>`<span class="badge ${attrColors[k]||'bg-slate-100'}">${k}: ${v}</span>`).join('')}
+        </div>
+        <div class="space-y-2">
+          ${Object.entries(attr).map(([k,v])=>{
+            const pct = s.failed > 0 ? Math.round(v/s.failed*100) : 0;
+            return `<div>
+              <div class="flex justify-between text-xs mb-1"><span>${k}</span><span>${v} (${pct}%)</span></div>
+              <div class="w-full bg-slate-100 rounded-full h-2"><div class="h-2 rounded-full ${attrColors[k]?.replace('text-','bg-').split(' ')[0]||'bg-slate-400'}" style="width:${pct}%"></div></div>
+            </div>`;
+          }).join('')}
+        </div>` : '<p class="text-slate-400 text-sm">无失败用例</p>'}
+      </div>
+      <!-- 失败用例详情 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="font-semibold mb-3">🔍 失败用例详情（${data.failures.length}）</h3>
+        <div class="space-y-3">
+          ${data.failures.map((f,i)=>{
+            const a = f.attribution;
+            return `<div class="border rounded p-3">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="text-xs text-slate-400">#${i+1}</span>
+                <span class="font-mono text-sm font-semibold">${esc(f.name)}</span>
+                ${f.tc_id?`<span class="badge bg-slate-100 text-slate-600">${esc(f.tc_id)}</span>`:''}
+                <span class="badge ${attrColors[a.category]||'bg-slate-100'}">${a.category}</span>
+              </div>
+              ${f.scenario?`<div class="text-sm text-slate-600 mb-1">📝 ${esc(f.scenario)}</div>`:''}
+              ${f.error_message?`<details class="mt-2"><summary class="text-xs text-red-600 cursor-pointer">查看错误信息</summary><pre class="text-xs text-red-600 bg-red-50 p-2 rounded mt-1 overflow-auto max-h-40">${esc(f.error_message)}</pre></details>`:''}
+              <div class="text-xs text-slate-500 mt-2">💡 ${esc(a.suggestion)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }catch(e){
+    content.innerHTML = `<div class="text-red-500 p-4">❌ ${e.message}</div>`;
+  }
+}
+
+// ===== 知识库层 =====
+async function knowledge(){
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-4">🧠 知识库层</h2>
+    <p class="text-slate-500 text-sm mb-4">4个库的内容同步到 cognee 知识图谱，支持跨库检索</p>
+    <div class="flex gap-3 mb-4">
+      <button onclick="knowledgeSync()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">🔄 同步到 cognee</button>
+      <button onclick="knowledge()" class="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-700">🔄 刷新</button>
+    </div>
+    <div id="kbList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"></div>
+    <div class="bg-white rounded-lg shadow p-4">
+      <h3 class="font-semibold mb-3">🔍 知识库查询</h3>
+      <div class="flex gap-2 mb-3">
+        <input id="kbQuery" class="flex-1 border rounded px-3 py-2 text-sm" placeholder="输入查询问题，如：身份证号校验规则是什么？" onkeydown="if(event.key==='Enter')knowledgeQuery()">
+        <button onclick="knowledgeQuery()" class="bg-indigo-600 text-white px-4 py-2 rounded">查询</button>
+      </div>
+      <div id="kbQueryResult"></div>
+    </div>`;
+  // 加载知识库列表
+  const bases = await req('/knowledge/bases').catch(()=>[]);
+  const colors = {'需求模型库':'border-blue-300 bg-blue-50','风险规则库':'border-red-300 bg-red-50','用例库':'border-green-300 bg-green-50','缺陷库':'border-purple-300 bg-purple-50'};
+  $('#kbList').innerHTML = bases.map(kb=>`
+    <div class="border-2 rounded-lg p-4 ${colors[kb.name]||'border-slate-300 bg-slate-50'}">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-semibold">${kb.name}</h4>
+        <div class="flex gap-2 items-center">
+          <span class="badge ${kb.exists?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${kb.exists?'✅ 可用':'❌ 不存在'}</span>
+          <button onclick="knowledgeBaseForm('${kb.id}')" class="text-indigo-600 hover:underline text-xs">编辑</button>
+        </div>
+      </div>
+      <div class="text-xs text-slate-500 mb-1">📁 ${esc(kb.path)}</div>
+      <div class="text-xs text-slate-500 mb-1">📄 ${kb.file_count} 个文件 | session: ${kb.session_id}</div>
+      ${kb.description?`<div class="text-xs text-slate-400 mt-1">📝 ${esc(kb.description)}</div>`:''}
+    </div>`).join('');
+}
+
+async function knowledgeBaseForm(kbId){
+  const bases = await req('/knowledge/bases');
+  const kb = bases.find(b => b.id === kbId);
+  if(!kb) return;
+  // 把 JSON 数组转换为逗号分隔的字符串方便编辑
+  const extArr = kb.extensions || [];
+  const subdirsArr = kb.subdirs || [];
+  const extStr = Array.isArray(extArr) ? extArr.join(', ') : String(extArr||'');
+  const subdirsStr = Array.isArray(subdirsArr) ? subdirsArr.join(', ') : String(subdirsArr||'');
+  openModal('编辑知识库 - ' + kb.name, `
+    <div class="space-y-3">
+      <div><label class="block text-sm mb-1">名称 *</label>
+        <input id="kb_name" class="w-full border rounded px-3 py-2" value="${esc(kb.name)}"></div>
+      <div><label class="block text-sm mb-1">代码 *</label>
+        <input id="kb_code" class="w-full border rounded px-3 py-2" value="${esc(kb.code)}"></div>
+      <div><label class="block text-sm mb-1">文件路径 *</label>
+        <input id="kb_path" class="w-full border rounded px-3 py-2 font-mono text-sm" value="${esc(kb.path)}" placeholder="/Users/tanzsongsen/Documents"></div>
+      <div><label class="block text-sm mb-1">Session ID</label>
+        <input id="kb_session" class="w-full border rounded px-3 py-2 font-mono text-sm" value="${esc(kb.session_id)}"></div>
+      <div><label class="block text-sm mb-1">文件扩展名（逗号分隔）</label>
+        <input id="kb_ext" class="w-full border rounded px-3 py-2 font-mono text-sm" value="${esc(extStr)}" placeholder=".md, .txt, .json">
+        <p class="text-xs text-slate-400 mt-1">支持格式：<code>.md, .txt</code> 或 <code>[".md",".txt"]</code></p></div>
+      <div><label class="block text-sm mb-1">子目录（逗号分隔，为空则扫描根目录）</label>
+        <input id="kb_subdirs" class="w-full border rounded px-3 py-2 font-mono text-sm" value="${esc(subdirsStr)}" placeholder="cases, tests, config">
+        <p class="text-xs text-slate-400 mt-1">支持格式：<code>cases, tests</code> 或 <code>["cases","tests"]</code></p></div>
+      <div><label class="block text-sm mb-1">描述</label>
+        <input id="kb_desc" class="w-full border rounded px-3 py-2" value="${esc(kb.description||'')}"></div>
+      <button onclick="knowledgeBaseSave('${kb.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded w-full">保存</button>
+    </div>`);
+}
+
+async function knowledgeBaseSave(kbId){
+  const body = {
+    name: $('#kb_name').value,
+    code: $('#kb_code').value,
+    path: $('#kb_path').value,
+    session_id: $('#kb_session').value,
+    extensions: $('#kb_ext').value,
+    subdirs: $('#kb_subdirs').value,
+    description: $('#kb_desc').value,
+  };
+  try{
+    await req(`/knowledge/bases/${kbId}`,{method:'PUT',body:JSON.stringify(body)});
+    closeModal(); knowledge();
+  }catch(e){
+    alert('❌ 保存失败: ' + e.message);
+  }
+}
+
+async function knowledgeSync(){
+  if(!confirm('确认将4个知识库同步到 cognee？此操作可能需要较长时间。')) return;
+  try{
+    const r = await req('/knowledge/sync',{method:'POST'});
+    alert('✅ ' + r.msg);
+  }catch(e){
+    alert('❌ 同步失败: ' + e.message);
+  }
+}
+
+async function knowledgeQuery(){
+  const q = $('#kbQuery').value.trim();
+  if(!q){ alert('请输入查询问题'); return; }
+  $('#kbQueryResult').innerHTML = '<div class="text-center py-4"><div class="animate-spin inline-block w-6 h-6 border-4 border-indigo-500 border-t-transparent rounded-full"></div></div>';
+  try{
+    const r = await req('/analysis/f4865061f505/knowledge',{method:'POST',body:JSON.stringify({question:q})});
+    if(r.available){
+      const results = r.results || [];
+      $('#kbQueryResult').innerHTML = results.length ? `
+        <div class="space-y-2">
+          ${results.map((r,i)=>`<div class="text-sm bg-slate-50 p-2 rounded"><b>${i+1}.</b> ${esc(typeof r==='string'?r:JSON.stringify(r))}</div>`).join('')}
+        </div>` : '<p class="text-slate-400 text-sm">无匹配结果</p>';
+    } else {
+      $('#kbQueryResult').innerHTML = `<div class="bg-amber-50 border border-amber-200 rounded p-3">
+        <p class="text-amber-700 text-sm font-semibold">⚠️ cognee 知识库查询不可用</p>
+        <p class="text-xs text-slate-600 mt-1">原因：${esc(r.error||'')}</p>
+        ${r.suggestion?`<p class="text-xs text-slate-600 mt-1">💡 ${esc(r.suggestion)}</p>`:''}
+      </div>`;
+    }
+  }catch(e){
+    $('#kbQueryResult').innerHTML = `<p class="text-red-500 text-sm">❌ ${e.message}</p>`;
+  }
+}
+
+// ===== 设置 =====
+async function settings(){
+  const s = await req('/status');
+  const taskList = await req('/tasks?limit=20');
+  const finishedTasks = taskList.filter(t=>t.report_url && (t.status==='success'||t.status==='failed'));
+  const workerStatus = s.worker_alive
+    ? '<span class="text-green-600 font-semibold">🟢 运行中</span>'
+    : '<span class="text-red-600 font-semibold">🔴 未运行</span>';
+  const pendingCount = (s.task_stats && s.task_stats.pending) || 0;
+  main.innerHTML = `
+    <h2 class="text-2xl font-bold mb-6">⚙ 平台设置</h2>
+    <div class="bg-white p-5 rounded-lg shadow mb-4 border-l-4 ${s.worker_alive?'border-green-500':'border-red-500'}">
+      <h3 class="font-semibold mb-3">🔧 Worker 管理</h3>
+      <div class="grid grid-cols-2 gap-2 text-sm mb-4">
+        <div>Worker 状态：${workerStatus}</div>
+        <div>Redis：<b>${s.redis?'在线':'离线'}</b></div>
+        <div>队列长度：<b>${s.queue_length}</b></div>
+        <div>Pending 任务：<b class="${pendingCount>0?'text-orange-600':'text-green-600'}">${pendingCount}</b></div>
+      </div>
+      <div class="flex gap-2 flex-wrap items-center">
+        <label class="text-sm text-slate-600">Worker 数量：</label>
+        <select id="workerCountSelect" class="border rounded px-2 py-1 text-sm">
+          <option value="1" selected>1 个（UI 测试推荐）</option>
+          <option value="2">2 个</option>
+          <option value="3">3 个（API 测试）</option>
+          <option value="4">4 个</option>
+        </select>
+        <button onclick="restartWorker()" class="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
+          🔄 重启 Worker（杀僵尸+清队列+重派+自动启动）
+        </button>
+        <button onclick="settings()" class="bg-slate-500 text-white px-4 py-2 rounded hover:bg-slate-600">
+          🔄 刷新状态
+        </button>
+      </div>
+      <div id="workerResult" class="mt-3 text-sm"></div>
+      <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-slate-600">
+        <b>使用说明：</b><br>
+        • 点击「重启 Worker」会自动：检查 Redis（不可用则自动启动）→ 杀僵尸进程 → 清队列 → 重派 pending → 启动新 worker<br>
+        • Worker 日志位于 <code>logs/workers/worker_*.log</code><br>
+        • 如需手动启动（备用）：<br>
+        <code class="bg-slate-900 text-green-400 px-2 py-1 rounded mt-1 inline-block">cd ~/auto_test && .venv/bin/python -m backend.worker --name worker-main</code>
+      </div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow mb-4">
+      <h3 class="font-semibold mb-3">🗂 日志管理</h3>
+      <div id="logStats" class="mb-4"><span class="text-slate-400">加载中...</span></div>
+      <div class="bg-slate-50 p-3 rounded mb-3">
+        <h4 class="text-sm font-semibold mb-2">自动清理配置</h4>
+        <div class="flex items-center gap-3 flex-wrap">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="autoCleanupEnabled" class="rounded">
+            启用自动清理（每日凌晨 3:00 执行）
+          </label>
+          <label class="text-sm">保留天数：</label>
+          <input type="number" id="retentionDays" value="30" min="1" max="365" class="border rounded px-2 py-1 text-sm w-20">
+          <span class="text-xs text-slate-400">天</span>
+          <button onclick="saveLogConfig()" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">💾 保存配置</button>
+        </div>
+        <p id="logConfigInfo" class="text-xs text-slate-500 mt-2"></p>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="cleanupLogs(false)" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+          🗑 立即清理（按保留天数）
+        </button>
+        <button onclick="cleanupLogs(true)" class="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600">
+          👁 试运行（只统计不删除）
+        </button>
+        <button onclick="loadLogStats()" class="bg-slate-500 text-white px-4 py-2 rounded hover:bg-slate-600">
+          🔄 刷新统计
+        </button>
+      </div>
+      <div id="logCleanupResult" class="mt-3 text-sm"></div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow mb-4">
+      <h3 class="font-semibold mb-3">飞书通知</h3>
+      <p class="text-sm text-slate-500 mb-3">在 <code class="bg-slate-100 px-1 rounded">config/settings.yaml</code> 中配置 feishu.webhook 与 secret。配置后可发送测试卡片验证。</p>
+      <button onclick="testFeishu()" class="bg-green-600 text-white px-4 py-2 rounded">📨 发送测试卡片</button>
+      <div id="feishuResult" class="mt-3 text-sm"></div>
+      <hr class="my-4">
+      <h3 class="font-semibold mb-3">发送指定报告</h3>
+      <p class="text-sm text-slate-500 mb-3">选择一个已完成的任务，将其报告发送到飞书群。</p>
+      <select id="feishuTaskSelect" class="w-full border rounded px-3 py-2 mb-3">
+        <option value="">-- 请选择任务 --</option>
+        ${finishedTasks.map(t=>`<option value="${t.id}">${t.id} | ${t.status} | ${t.started_at||'-'}</option>`).join('')}
+      </select>
+      <button onclick="sendFeishuReport()" class="bg-indigo-600 text-white px-4 py-2 rounded">📨 发送选中报告</button>
+      <div id="feishuSendResult" class="mt-3 text-sm"></div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow mb-4">
+      <h3 class="font-semibold mb-3">系统信息</h3>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <div>Allure CLI：<b>${esc(s.allure_cli)}</b></div>
+        <div>项目数：<b>${s.project_count}</b></div>
+      </div>
+    </div>
+    <div class="bg-white p-5 rounded-lg shadow">
+      <h3 class="font-semibold mb-3">负载均衡启动方式</h3>
+      <pre class="bg-slate-900 text-slate-100 p-3 rounded text-xs"># 启动 API 服务
+uvicorn backend.app:app --host 0.0.0.0 --port 8000
+
+# 启动多个 worker（负载均衡节点，需先启动 Redis）
+python -m backend.worker --name worker-1
+python -m backend.worker --name worker-2</pre>
+    </div>`;
+  // 加载日志统计和配置
+  loadLogStats();
+  loadLogConfig();
+}
+async function restartWorker(){
+  const count = $('#workerCountSelect') ? $('#workerCountSelect').value : 1;
+  if(!confirm(`确认重启 Worker？\n\n将执行以下操作：\n1. 检查 Redis（不可用则自动启动）\n2. 杀掉所有僵尸 pytest/playwright 进程和旧 worker\n3. 清空 Redis 队列\n4. 重新派发所有 pending 任务\n5. 自动启动 ${count} 个新 worker 进程`)) return;
+  const el = $('#workerResult');
+  if(el) el.innerHTML = '<span class="text-slate-400">⏳ 正在检查 Redis 并重启 Worker...</span>';
+  try{
+    const r = await req(`/worker/restart?worker_count=${count}&auto_start=true`,{method:'POST'});
+    const killed = r.killed_processes && r.killed_processes.length>0 ? r.killed_processes.join(', ') : '无';
+    const dispatched = r.redispatched && r.redispatched.length>0 ? r.redispatched.join(', ') : '无';
+    const status = r.worker_alive ? `🟢 运行中 (${r.worker_count} 个)` : '🔴 未运行';
+    // Redis 启动信息
+    let redisInfo = r.redis_ok ? '🟢 在线' : '🔴 离线';
+    if(r.redis_result){
+      if(r.redis_result.ping_ok){
+        redisInfo = `🟢 已自动启动 (${r.redis_result.method})`;
+      } else {
+        redisInfo = `❌ 自动启动失败<br><span class="text-red-500 text-xs">${esc(r.redis_result.detail||'').slice(0,200)}</span>`;
+      }
+    }
+    // Worker 启动信息
+    let startInfo = '未启动';
+    if(r.start_result){
+      const started = r.start_result.started || [];
+      const errors = r.start_result.errors || [];
+      const pids = started.map(s => `PID:${s.pid}`).join(', ');
+      startInfo = started.length > 0
+        ? `✅ 已启动 ${started.length} 个 (${pids})`
+        : '❌ 启动失败';
+      if(errors.length > 0) startInfo += `<br><span class="text-red-500 text-xs">${errors.join('; ')}</span>`;
+    }
+    if(el) el.innerHTML = `
+      <div class="p-3 bg-${r.worker_alive?'green':'red'}-50 border border-${r.worker_alive?'green':'red'}-200 rounded">
+        <p><b>✅ 重启完成</b></p>
+        <p class="mt-1">Redis：${redisInfo}</p>
+        <p>Worker 状态：${status}</p>
+        <p>杀掉进程：${killed}</p>
+        <p>清理队列：${r.queue_cleared} 条</p>
+        <p>重派任务：${dispatched}</p>
+        <p>新启动：${startInfo}</p>
+        <p class="mt-1 text-xs text-slate-500">${r.message}</p>
+      </div>`;
+    // 刷新设置页面
+    setTimeout(()=>settings(), 2000);
+  }catch(e){
+    if(el) el.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded">❌ 重启失败：${e.message}</div>`;
+  }
+}
+
+// ===== 日志管理 =====
+async function loadLogStats(){
+  const el = $('#logStats');
+  if(!el) return;
+  el.innerHTML = '<span class="text-slate-400">⏳ 加载统计中...</span>';
+  try{
+    const s = await req('/logs/stats');
+    let html = `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+      <div class="bg-slate-50 p-3 rounded">
+        <div class="text-xs text-slate-500">总占用</div>
+        <div class="text-lg font-bold text-indigo-600">${s.total_size_human}</div>
+      </div>
+      <div class="bg-slate-50 p-3 rounded">
+        <div class="text-xs text-slate-500">总文件数</div>
+        <div class="text-lg font-bold text-indigo-600">${s.total_files}</div>
+      </div>
+      <div class="bg-slate-50 p-3 rounded">
+        <div class="text-xs text-slate-500">自动清理</div>
+        <div class="text-lg font-bold ${s.config.enabled?'text-green-600':'text-slate-400'}">${s.config.enabled?'已启用':'未启用'}</div>
+      </div>
+      <div class="bg-slate-50 p-3 rounded">
+        <div class="text-xs text-slate-500">上次清理</div>
+        <div class="text-sm font-bold text-slate-600">${s.config.last_run||'从未执行'}</div>
+      </div>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100">
+        <tr>
+          <th class="text-left p-2">目录</th>
+          <th class="text-left p-2">说明</th>
+          <th class="text-right p-2">大小</th>
+          <th class="text-right p-2">文件数</th>
+          <th class="text-left p-2">最早</th>
+          <th class="text-left p-2">最新</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    for(const t of s.targets){
+      html += `<tr class="border-b">
+        <td class="p-2 font-mono text-xs">${t.path}</td>
+        <td class="p-2 text-xs text-slate-500">${t.description}</td>
+        <td class="p-2 text-right font-semibold">${t.size_human}</td>
+        <td class="p-2 text-right">${t.file_count}</td>
+        <td class="p-2 text-xs text-slate-500">${t.oldest||'-'}</td>
+        <td class="p-2 text-xs text-slate-500">${t.newest||'-'}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+    el.innerHTML = html;
+  }catch(e){
+    el.innerHTML = `<p class="text-red-500">加载失败：${e.message}</p>`;
+  }
+}
+
+async function loadLogConfig(){
+  try{
+    const c = await req('/logs/config');
+    const cb = $('#autoCleanupEnabled');
+    const rd = $('#retentionDays');
+    const info = $('#logConfigInfo');
+    if(cb) cb.checked = c.enabled;
+    if(rd) rd.value = c.retention_days;
+    if(info) info.innerHTML = `当前：${c.enabled?'✅ 已启用':'⚪ 未启用'} | 保留 ${c.retention_days} 天 | 上次清理：${c.last_run||'从未'}`;
+  }catch(e){}
+}
+
+async function saveLogConfig(){
+  const enabled = $('#autoCleanupEnabled') ? $('#autoCleanupEnabled').checked : false;
+  const days = $('#retentionDays') ? parseInt($('#retentionDays').value) : 30;
+  try{
+    const r = await req(`/logs/config?enabled=${enabled}&retention_days=${days}`,{method:'POST'});
+    const info = $('#logConfigInfo');
+    if(info) info.innerHTML = `✅ 已保存 | ${r.enabled?'已启用自动清理':'已关闭自动清理'} | 保留 ${r.retention_days} 天`;
+    // 刷新统计
+    loadLogStats();
+  }catch(e){
+    alert('保存失败：' + e.message);
+  }
+}
+
+async function cleanupLogs(dryRun){
+  const days = $('#retentionDays') ? parseInt($('#retentionDays').value) : 30;
+  const action = dryRun ? '试运行' : '清理';
+  if(!dryRun && !confirm(`确认清理 ${days} 天前的日志？\n\n此操作将删除以下目录中超过 ${days} 天的文件：\n• logs/ - 任务日志\n• logs/workers/ - Worker 日志\n• screenshots/ - 截图\n• reports/allure-results/ - Allure 结果\n• reports/allure-report/ - Allure 报告\n\n正在使用的文件会被跳过（不影响平台运行）。`)) return;
+  const el = $('#logCleanupResult');
+  if(el) el.innerHTML = `<span class="text-slate-400">⏳ 正在${action}...</span>`;
+  try{
+    const r = await req(`/logs/cleanup?retention_days=${days}&dry_run=${dryRun}`,{method:'POST'});
+    let html = `<div class="p-3 bg-${r.total_deleted>0?'green':'slate'}-50 border border-${r.total_deleted>0?'green':'slate'}-200 rounded">
+      <p><b>${dryRun?'👁 试运行结果':'✅ 清理完成'}</b> (保留 ${r.retention_days} 天)</p>
+      <p class="mt-1">共${dryRun?'将':''}删除：<b>${r.total_deleted}</b> 个文件，释放 <b>${r.total_freed_human}</b></p>
+      <table class="w-full text-xs mt-2">
+        <thead class="bg-slate-100"><tr><th class="text-left p-1">目录</th><th class="text-right p-1">删除</th><th class="text-right p-1">跳过</th><th class="text-right p-1">释放</th></tr></thead><tbody>`;
+    for(const t of r.results){
+      if(t.deleted>0 || t.skipped>0){
+        html += `<tr class="border-b"><td class="p-1 font-mono">${t.path}</td><td class="p-1 text-right">${t.deleted}</td><td class="p-1 text-right">${t.skipped}</td><td class="p-1 text-right">${t.freed_human}</td></tr>`;
+      }
+    }
+    html += `</tbody></table></div>`;
+    if(el) el.innerHTML = html;
+    // 刷新统计
+    loadLogStats();
+  }catch(e){
+    if(el) el.innerHTML = `<p class="text-red-500">❌ ${action}失败：${e.message}</p>`;
+  }
+}
+
+async function testFeishu(){
+  $('#feishuResult').innerHTML = '<span class="text-slate-400">发送中...</span>';
+  const r = await req('/feishu/test',{method:'POST'});
+  $('#feishuResult').innerHTML = `<pre class="bg-slate-100 p-2 rounded text-xs">${esc(JSON.stringify(r,null,2))}</pre>`;
+}
+async function sendFeishuReport(){
+  const tid = document.getElementById('feishuTaskSelect')?.value;
+  if(!tid){ alert('请选择一个任务'); return; }
+  document.getElementById('feishuSendResult').innerHTML = '<span class="text-slate-400">发送中...</span>';
+  const r = await req(`/feishu/send/${tid}`,{method:'POST'});
+  document.getElementById('feishuSendResult').innerHTML = `<pre class="bg-slate-100 p-2 rounded text-xs">${esc(JSON.stringify(r,null,2))}</pre>`;
+}
+
+// ===== 系统信息条 =====
+async function loadSysInfo(){
+  try{
+    const s = await req('/status');
+    const workerIcon = s.worker_alive ? '🟢' : '🔴';
+    $('#sysInfo').innerHTML = `Worker ${workerIcon} · Redis ${s.redis?'🟢':'🔴'} · 队列 ${s.queue_length}`;
+  }catch{ $('#sysInfo').textContent = '后端未连接'; }
+}
+setInterval(loadSysInfo, 10000);
+
+// ===== 启动 =====
+loadGlobalProj();
+dashboard();
+loadSysInfo();
+</script>
+</body>
+</html>

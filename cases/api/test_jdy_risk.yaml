@@ -1,0 +1,643 @@
+
+# ========================================================
+# 风险规则库 API 测试用例
+# 基于 /Users/tanzsongsen/Music/风险规则库.docx
+# verify_field: 测试的目标字段
+# verify_keywords: 响应 msg 中应包含的关键词（校验请求与响应一致性）
+# ========================================================
+
+# ========== 一、身份真实性风险（Identity Risk） ==========
+
+- name: RISK-ID-001 身份证OCR识别不一致-姓名不匹配
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-ID-001
+  risk_category: identity
+  risk_level: HIGH
+  verify_field: name
+  verify_keywords: ["姓名", "name", "身份", "OCR", "不一致"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "张三"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-ID-002 身份证格式非法-18位全数字
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-ID-002
+  risk_category: identity
+  risk_level: HIGH
+  verify_field: idCard
+  verify_keywords: ["身份证", "idCard", "身份", "格式", "非法"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "测试用户"
+    idCard: "123456789012345678"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-ID-003 身份证校验码错误-末位不匹配
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-ID-003
+  risk_category: identity
+  risk_level: HIGH
+  verify_field: idCard
+  verify_keywords: ["身份证", "idCard", "校验", "格式", "身份"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "测试用户"
+    idCard: "110101199001011230"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-ID-004 年龄异常-未成年17岁
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-ID-004
+  risk_category: identity
+  risk_level: HIGH
+  verify_field: idCard
+  verify_keywords: ["年龄", "未成年", "age", "身份", "idCard"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "未成年用户"
+    idCard: "MTIwMDI5MjAwOTAxMDE="
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+# ========== 二、手机号风险（Mobile Risk） ==========
+
+- name: RISK-MOBILE-001 手机号格式非法-11位全相同
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-MOBILE-001
+  risk_category: mobile
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTIyMjIyMjIyMjI="
+    captcha: "124214"
+    carNumber: ""
+  expect_code: 200
+
+- name: RISK-MOBILE-001 手机号格式非法-位数不足
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-MOBILE-001
+  risk_category: mobile
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTIyMjIyMjIyMjI="
+    captcha: "124214"
+    carNumber: ""
+  expect_code: 200
+
+- name: RISK-MOBILE-001 手机号格式非法-非1开头
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-MOBILE-001
+  risk_category: mobile
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["手机", "phone", "手机号", "格式", "号码"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MjIyMjIyMjIyMjI="
+    captcha: "124214"
+    carNumber: ""
+  expect_code: 200
+
+- name: RISK-MOBILE-002 手机号黑名单
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-MOBILE-002
+  risk_category: mobile
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["手机", "phone", "黑名单", "手机号", "号码"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTIyMjIyMjIyMjI="
+    captcha: "124214"
+    carNumber: ""
+  expect_code: 200
+
+- name: RISK-MOBILE-003 借款人与联系人手机号重复
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  risk_id: RISK-MOBILE-003
+  risk_category: mobile
+  risk_level: MEDIUM
+  verify_field: mobile
+  verify_keywords: ["手机", "mobile", "重复", "联系人", "号码"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos:
+        - index: 1
+          name: "张三"
+          relationship: "父母"
+          mobile: "17788223311"
+          idNo: ""
+        - index: 2
+          name: "李四"
+          relationship: "同事"
+          mobile: "17788223311"
+          idNo: ""
+  expect_code: 200
+
+# ========== 三、车辆风险（Vehicle Risk） ==========
+
+- name: RISK-CAR-001 车牌格式错误-纯数字
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAR-001
+  risk_category: vehicle
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["车牌", "车辆", "carNumber", "格式", "车"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "MTIzNDU2"
+  expect_code: 200
+
+- name: RISK-CAR-001 车牌格式错误-缺少省份汉字
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAR-001
+  risk_category: vehicle
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["车牌", "车辆", "carNumber", "格式", "车"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "QTEyMzQ1"
+  expect_code: 200
+
+- name: RISK-CAR-002 车牌不存在-虚假车牌
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAR-002
+  risk_category: vehicle
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["车牌", "车辆", "carNumber", "不存在", "车"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5pyIZEEwMDAwMA=="
+  expect_code: 200
+
+- name: RISK-CAR-004 车辆运营性质-出租客运
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAR-004
+  risk_category: vehicle
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["车辆", "运营", "营运", "车", "性质"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5pyIZEEwMDAwMA=="
+  expect_code: 200
+
+- name: RISK-CAR-008 车辆状态异常-注销车辆
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAR-008
+  risk_category: vehicle
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["车辆", "车", "状态", "carNumber", "车牌"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5pyIZEE5OTk5OQ=="
+  expect_code: 200
+
+# ========== 四、验证码风险（Captcha Risk） ==========
+
+- name: RISK-CAP-001 验证码错误
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAP-001
+  risk_category: captcha
+  risk_level: MEDIUM
+  verify_field: captcha
+  verify_keywords: ["验证码", "captcha", "验证", "码"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "999999"
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
+  expect_code: 200
+
+- name: RISK-CAP-002 验证码暴力破解-连续5次错误
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-CAP-002
+  risk_category: captcha
+  risk_level: HIGH
+  verify_field: captcha
+  verify_keywords: ["验证码", "captcha", "锁定", "频繁", "验证"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "000001"
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
+  expect_code: 200
+  repeat: 5
+
+- name: RISK-CAP-003 验证码发送攻击-1分钟内多次发送
+  path: /jdy/apply/api/v1/business/sms
+  method: POST
+  risk_id: RISK-CAP-003
+  risk_category: captcha
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["验证码", "短信", "频繁", "限制", "发送"]
+  body:
+    phone: "MTM4MDAxMjM0NTY="
+  expect_code: 200
+
+# ========== 五、安全攻击风险（Security Risk） ==========
+
+- name: RISK-SEC-001 SQL注入-手机号字段
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-SEC-001
+  risk_category: security
+  risk_level: HIGH
+  verify_field: phone
+  verify_keywords: ["非法", "拦截", "注入", "攻击", "特殊字符", "phone", "手机"]
+  body:
+    applyId: "865634306742032147"
+    phone: "JyBPUiAxPTEgLS0="
+    captcha: "124214"
+    carNumber: ""
+  expect_code: 200
+
+- name: RISK-SEC-001 SQL注入-车牌字段
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-SEC-001
+  risk_category: security
+  risk_level: HIGH
+  verify_field: carNumber
+  verify_keywords: ["非法", "拦截", "注入", "攻击", "特殊字符", "carNumber", "车"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "J29yIDE9MS0t"
+  expect_code: 200
+
+- name: RISK-SEC-001 SQL注入-姓名字段
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-SEC-001
+  risk_category: security
+  risk_level: HIGH
+  verify_field: name
+  verify_keywords: ["非法", "拦截", "注入", "攻击", "特殊字符", "name", "姓名"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "' OR 1=1 --"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-SEC-002 XSS攻击-姓名字段script标签
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-SEC-002
+  risk_category: security
+  risk_level: HIGH
+  verify_field: name
+  verify_keywords: ["非法", "拦截", "攻击", "特殊字符", "script", "name", "姓名"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "<script>alert(1)</script>"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-SEC-002 XSS攻击-地址字段img标签
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-SEC-002
+  risk_category: security
+  risk_level: HIGH
+  verify_field: area
+  verify_keywords: ["非法", "拦截", "攻击", "特殊字符", "script", "img", "area"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "测试用户"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: '<img src=x onerror=alert(1)>'
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+# ========== 六、业务流程风险（Flow Risk） ==========
+
+- name: RISK-FLOW-001 签署流程绕过-直接访问签约接口
+  path: /jdy/apply/api/v1/business/submit/sign
+  method: POST
+  risk_id: RISK-FLOW-001
+  risk_category: flow
+  risk_level: HIGH
+  verify_field: applyId
+  verify_keywords: ["流程", "签约", "sign", "步骤", "顺序"]
+  body:
+    applyId: "865634306742032147"
+  expect_code: 200
+
+- name: RISK-FLOW-002 重复签约-已签约再次提交
+  path: /jdy/apply/api/v1/business/submit/sign
+  method: POST
+  risk_id: RISK-FLOW-002
+  risk_category: flow
+  risk_level: MEDIUM
+  verify_field: applyId
+  verify_keywords: ["重复", "签约", "sign", "已签", "提交"]
+  body:
+    applyId: "865634306742032147"
+  expect_code: 200
+
+- name: RISK-FLOW-003 重复申请-同用户短时间多次提交评估
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  risk_id: RISK-FLOW-003
+  risk_category: flow
+  risk_level: MEDIUM
+  verify_field: applyId
+  verify_keywords: ["重复", "申请", "频繁", "限制", "evaluate"]
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "lz9bE2QPZapTyNSBAcPoXw=="
+  expect_code: 200
+  repeat: 3
+
+# ========== 七、行为风险（Behavior Risk） ==========
+
+- name: RISK-BEH-001 操作速度异常-极短时间提交贷款
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-BEH-001
+  risk_category: behavior
+  risk_level: MEDIUM
+  verify_field: applyId
+  verify_keywords: ["速度", "频率", "异常", "行为", "操作"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "施哲鼎"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+# ========== 八、关系图谱风险（Graph Risk） ==========
+
+- name: RISK-GRAPH-001 借款人与联系人身份证重复
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  risk_id: RISK-GRAPH-001
+  risk_category: graph
+  risk_level: MEDIUM
+  verify_field: idNo
+  verify_keywords: ["身份证", "重复", "id_card", "idNo", "同人", "关联"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos:
+        - index: 1
+          name: "施哲鼎"
+          relationship: "父母"
+          mobile: "16634543535"
+          idNo: "Wx0jShPM1bQ3AR3QWAz08skNNRvVPw/TR0sICnwWdHc="
+        - index: 2
+          name: "李四"
+          relationship: "同事"
+          mobile: "18857567575"
+          idNo: ""
+  expect_code: 200
+
+- name: RISK-GRAPH-002 联系人之间手机号重复
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  risk_id: RISK-GRAPH-002
+  risk_category: graph
+  risk_level: MEDIUM
+  verify_field: mobile
+  verify_keywords: ["手机", "mobile", "重复", "联系人", "号码"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos:
+        - index: 1
+          name: "张三"
+          relationship: "父母"
+          mobile: "16634543535"
+          idNo: ""
+        - index: 2
+          name: "李四"
+          relationship: "同事"
+          mobile: "16634543535"
+          idNo: ""
+  expect_code: 200
+
+# ========== 九、数据一致性风险（Data Consistency） ==========
+
+- name: RISK-DATA-001 页面数据篡改-贷款金额与评估不符
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  risk_id: RISK-DATA-001
+  risk_category: data_consistency
+  risk_level: HIGH
+  verify_field: monthlySupply
+  verify_keywords: ["金额", "数据", "一致", "monthlySupply", "额度", "不符"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "施哲鼎"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 999999.99
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: RISK-DATA-002 前后端字段不一致-手机号跨页面不匹配
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  risk_id: RISK-DATA-002
+  risk_category: data_consistency
+  risk_level: MEDIUM
+  verify_field: mobile
+  verify_keywords: ["手机", "phone", "一致", "mobile", "不符", "数据"]
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos:
+        - index: 1
+          name: "张三"
+          relationship: "父母"
+          mobile: "18888888888"
+          idNo: ""
+        - index: 2
+          name: "李四"
+          relationship: "同事"
+          mobile: "19999999999"
+          idNo: ""
+  expect_code: 200

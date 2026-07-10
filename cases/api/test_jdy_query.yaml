@@ -1,0 +1,163 @@
+
+- name: 查询民族字典
+  path: /jdy/apply/api/v1/query/dictData/ethnicity
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询婚姻状态字典
+  path: /jdy/apply/api/v1/query/dictData/marital_status
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询学历字典
+  path: /jdy/apply/api/v1/query/dictData/education
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询职业类型字典
+  path: /jdy/apply/api/v1/query/dictData/occupation
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询行业字典
+  path: /jdy/apply/api/v1/query/dictData/industry
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询联系人关系字典
+  path: /jdy/apply/api/v1/query/dictData/relative
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询贷款用途字典
+  path: /jdy/apply/api/v1/query/dictData/loan_use
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+# ========== 查询接口 - 正向正常流程 ==========
+
+- name: 查询签约前信息-正常
+  path: /jdy/apply/api/v1/query/preSign/865634306742032147
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询补充信息-正常
+  path: /jdy/apply/api/v1/query/supplyInfo/865634306742032147
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询贷款信息-正常
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "865634306742032147"
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询产品信息-正常
+  path: /jdy/apply/api/v1/query/productInfo
+  method: GET
+  params:
+    productId: ""
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 查询地区信息-正常
+  path: /jdy/apply/api/v1/query/sysArea
+  method: GET
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+# ========== 查询接口 - 反向异常入参 ==========
+
+- name: 查询签约前信息-applyId不存在
+  path: /jdy/apply/api/v1/query/preSign/999999999999999999
+  method: GET
+  expect_code: 200
+  expect_success: false
+
+- name: 查询补充信息-applyId不存在
+  path: /jdy/apply/api/v1/query/supplyInfo/999999999999999999
+  method: GET
+  expect_code: 200
+  expect_success: false
+
+- name: 查询贷款信息-applyId不存在
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "999999999999999999"
+  expect_code: 200
+  expect_success: false
+
+# ========== 查询接口 - 边界极值 ==========
+
+- name: 查询签约前信息-applyId为1位
+  path: /jdy/apply/api/v1/query/preSign/1
+  method: GET
+  expect_code: 200
+
+- name: 查询贷款信息-applyId为空
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: ""
+  expect_code: 200
+
+# ========== 查询接口 - 非法参数 ==========
+
+- name: 查询签约前信息-applyId含特殊字符
+  path: /jdy/apply/api/v1/query/preSign/abc
+  method: GET
+  expect_code: 200
+  expect_success: false
+
+- name: 查询贷款信息-applyId含SQL注入
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "' OR 1=1 --"
+  expect_code: 200
+  expect_success: false
+
+# ========== 查询接口 - 安全/性能/兼容性 ==========
+
+- name: 查询产品信息-超长productId
+  path: /jdy/apply/api/v1/query/productInfo
+  method: GET
+  params:
+    productId: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  expect_code: 200

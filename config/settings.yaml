@@ -1,0 +1,33 @@
+# ===== 测试平台全局配置 =====
+server:
+  host: 0.0.0.0
+  port: 8001
+  external_url: "http://192.168.31.47:8001"  # 手动配置固定IP，避免自动检测不稳定
+
+# 飞书机器人通知（留空则跳过发送）
+feishu:
+  webhook: "https://open.feishu.cn/open-apis/bot/v2/hook/2183622f-5a6e-48a8-8b76-e8c8199541eb"        # https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxx
+  secret: "ggcyrPf6aM3EaPkqgZSJQc"         # 签名校验 secret（启用签名时填写）
+
+# Redis 队列（负载均衡：多 worker 从同一队列消费）
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  queue: test_tasks
+
+# 执行器
+executor:
+  workers: 2                 # 默认启动 worker 数（负载均衡节点）
+  results_dir: reports/allure-results
+  report_dir: reports/allure-report
+  screenshots_dir: screenshots
+  logs_dir: logs
+  runtime_dir: runtime
+
+# allure 命令
+allure:
+  cli: allure
+
+
+

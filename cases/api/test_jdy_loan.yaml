@@ -1,0 +1,65 @@
+
+# ========== 贷款信息接口 - 正向正常流程 ==========
+
+- name: 查询贷款信息-正常
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "865634306742032147"
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+# ========== 贷款信息接口 - 反向异常入参 ==========
+
+- name: 查询贷款信息-applyId不存在
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "999999999999999999"
+  expect_code: 200
+  expect_success: false
+
+# ========== 贷款信息接口 - 边界极值 ==========
+
+- name: 查询贷款信息-applyId为空
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: ""
+  expect_code: 200
+
+- name: 查询贷款信息-applyId为1位数字
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "1"
+  expect_code: 200
+
+# ========== 贷款信息接口 - 非法参数 ==========
+
+- name: 查询贷款信息-applyId含特殊字符
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "!@#$%"
+  expect_code: 200
+  expect_success: false
+
+- name: 查询贷款信息-applyId含SQL注入
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "' OR 1=1 --"
+  expect_code: 200
+  expect_success: false
+
+# ========== 贷款信息接口 - 安全/性能/兼容性 ==========
+
+- name: 查询贷款信息-超长applyId
+  path: /jdy/apply/api/v1/query/loan
+  method: GET
+  params:
+    applyId: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  expect_code: 200

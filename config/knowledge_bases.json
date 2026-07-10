@@ -1,0 +1,34 @@
+{
+  "缺陷库": {
+    "path": "/Users/tanzsongsen/Pictures/缺陷库.xlsx",
+    "session_id": "kb_defect",
+    "extensions": [],
+    "subdirs": null
+  },
+  "需求模型库": {
+    "path": "/Users/tanzsongsen/Documents",
+    "session_id": "kb_requirement",
+    "extensions": [
+      ".md",
+      ".txt",
+      ".json",
+      ".yaml",
+      ".yml",
+      ".csv",
+      ".xlsx"
+    ],
+    "subdirs": null
+  },
+  "风险规则库": {
+    "path": "/Users/tanzsongsen/Music/风险规则库.docx",
+    "session_id": "kb_risk",
+    "extensions": [],
+    "subdirs": null
+  },
+  "用例库": {
+    "path": "/Users/tanzsongsen/auto_test/cases",
+    "session_id": "kb_testcase",
+    "extensions": [],
+    "subdirs": null
+  }
+}

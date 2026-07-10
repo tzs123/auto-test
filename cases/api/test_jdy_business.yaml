@@ -1,0 +1,264 @@
+
+# ========== 业务提交接口 - 正向正常流程 ==========
+
+- name: 提交评估-正常
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  body:
+    applyId: "865634306742032147"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5LqsQTEyMzQ1"
+  expect_code: 200
+
+- name: 提交贷款-正常
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "LOAN_PAGE"
+    name: "施哲鼎"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+
+- name: 提交补充信息-正常
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  body:
+    applyId: "865634306742032147"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos:
+        - index: 1
+          name: "张三"
+          relationship: "父母"
+          mobile: "16634543535"
+          idNo: ""
+        - index: 2
+          name: "李四"
+          relationship: "同事"
+          mobile: "18857567575"
+          idNo: ""
+  expect_code: 200
+
+- name: 提交签约-正常
+  path: /jdy/apply/api/v1/business/submit/sign
+  method: POST
+  body:
+    applyId: "865634306742032147"
+  expect_code: 200
+
+- name: 计算月供-正常
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "50490"
+    loanTerm: 36
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+# ========== 业务提交接口 - 反向异常入参 ==========
+
+- name: 提交评估-applyId不存在
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  body:
+    applyId: "999999999999999999"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5LqsQTEyMzQ1"
+  expect_code: 200
+  expect_success: false
+
+- name: 提交贷款-applyId不存在
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  body:
+    applyId: "999999999999999999"
+    applyPageCode: "LOAN_PAGE"
+    name: "施哲鼎"
+    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
+    loanTerm: 36
+    area: "北京市-市辖区-东城区"
+    monthlySupply: 1775.08
+    loanPurpose: "教育"
+    updateCarNumber: ""
+    ethnicity: "汉"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    issueAuthority: "北京市公安局海淀分局"
+    validPeriod: "2016.03.12-2036.03.12"
+    isModify: false
+    isLicenseVerified: false
+  expect_code: 200
+  expect_success: false
+
+- name: 提交补充信息-applyId不存在
+  path: /jdy/apply/api/v1/business/submit/supplyInfo
+  method: POST
+  body:
+    applyId: "999999999999999999"
+    applyPageCode: "SUPPLY_PAGE"
+    area: "北京市-市辖区-东城区"
+    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
+    marriage: "未婚"
+    education: "硕士及以上"
+    companyName: "4124"
+    workType: "国家机关、党群组织、企业、事业单位负责人"
+    yearPackage: "41"
+    funderSupplySubmitInfo:
+      industry: "房地产业"
+      companyAddress: "1241"
+      customerRelativeInfos: []
+  expect_code: 200
+  expect_success: false
+
+- name: 提交签约-applyId不存在
+  path: /jdy/apply/api/v1/business/submit/sign
+  method: POST
+  body:
+    applyId: "999999999999999999"
+  expect_code: 200
+  expect_success: false
+
+- name: 计算月供-金额为0
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "0"
+    loanTerm: 36
+  expect_code: 200
+
+# ========== 业务提交接口 - 边界极值 ==========
+
+- name: 计算月供-贷款期限最小值12期
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "50490"
+    loanTerm: 12
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 计算月供-贷款期限最大值36期
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "50490"
+    loanTerm: 36
+  expect_code: 200
+  expect_success: true
+  expect_code_body: 0
+  expect_data_not_null: true
+
+- name: 计算月供-贷款金额最小值1元
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "1"
+    loanTerm: 36
+  expect_code: 200
+
+- name: 计算月供-贷款金额最大值500000元
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "500000"
+    loanTerm: 36
+  expect_code: 200
+
+# ========== 业务提交接口 - 非法参数 ==========
+
+- name: 提交评估-applyId为空
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  body:
+    applyId: ""
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5LqsQTEyMzQ1"
+  expect_code: 200
+  expect_success: false
+
+- name: 提交贷款-必填字段为空
+  path: /jdy/apply/api/v1/business/submit/loan
+  method: POST
+  body:
+    applyId: ""
+    applyPageCode: ""
+    name: ""
+    idCard: ""
+    loanTerm: null
+    area: ""
+  expect_code: 200
+  expect_success: false
+
+- name: 计算月供-贷款期限为0
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "50490"
+    loanTerm: 0
+  expect_code: 200
+  expect_success: false
+
+- name: 计算月供-贷款期限为负数
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "50490"
+    loanTerm: -1
+  expect_code: 200
+
+- name: 计算月供-贷款金额为负数
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "-100"
+    loanTerm: 36
+  expect_code: 200
+
+# ========== 业务提交接口 - 安全/性能/兼容性 ==========
+
+- name: 提交评估-applyId含SQL注入
+  path: /jdy/apply/api/v1/business/submit/evaluate
+  method: POST
+  body:
+    applyId: "' OR 1=1 --"
+    phone: "MTM4MDAxMjM0NTY="
+    captcha: "124214"
+    carNumber: "5LqsQTEyMzQ1"
+  expect_code: 200
+  expect_success: false
+
+- name: 计算月供-金额含特殊字符
+  path: /jdy/apply/api/v1/business/monthlySupply
+  method: POST
+  body:
+    limitAmt: "abc"
+    loanTerm: 36
+  expect_code: 200
+  expect_success: false

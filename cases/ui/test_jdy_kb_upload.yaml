@@ -1,0 +1,165 @@
+# ===================== 图片格式校验测试用例（身份证/行驶证只支持jpg/png/jpeg） =====================
+
+# ---------- 正向：支持格式 ----------
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-01
+  scenario: positive_身份证正面jpg格式上传成功
+  module: 申请资料
+  tags:
+  - positive
+  - upload_page
+  - kb
+  kb_summary: 上传jpg格式的身份证正面图片，应上传成功并触发OCR识别
+  kb_expected: 上传成功，OCR识别正常，无格式错误提示
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/身份证正面.jpg
+  expect_format_valid: true
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-02
+  scenario: positive_身份证正面png格式上传成功
+  module: 申请资料
+  tags:
+  - positive
+  - upload_page
+  - kb
+  kb_summary: 上传png格式的身份证正面图片，应上传成功并触发OCR识别
+  kb_expected: 上传成功，OCR识别正常，无格式错误提示
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/身份证正面.png
+  expect_format_valid: true
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-03
+  scenario: positive_身份证正面jpeg格式上传成功
+  module: 申请资料
+  tags:
+  - positive
+  - upload_page
+  - kb
+  kb_summary: 上传jpeg格式的身份证正面图片，应上传成功并触发OCR识别
+  kb_expected: 上传成功，OCR识别正常，无格式错误提示
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/身份证正面.jpeg
+  expect_format_valid: true
+
+# ---------- 反向：不支持格式 ----------
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-04
+  scenario: negative_身份证正面gif格式被拦截
+  module: 申请资料
+  tags:
+  - negative
+  - upload_page
+  - kb
+  kb_summary: 上传gif格式图片，应被前端拦截或后端拒绝
+  kb_expected: 提示图片格式不支持，上传失败
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/test.gif
+  expect_format_valid: false
+  expect_error_keyword: 格式
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-05
+  scenario: negative_身份证正面bmp格式被拦截
+  module: 申请资料
+  tags:
+  - negative
+  - upload_page
+  - kb
+  kb_summary: 上传bmp格式图片，应被前端拦截或后端拒绝
+  kb_expected: 提示图片格式不支持，上传失败
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/test.bmp
+  expect_format_valid: false
+  expect_error_keyword: 格式
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-06
+  scenario: negative_身份证正面webp格式被拦截
+  module: 申请资料
+  tags:
+  - negative
+  - upload_page
+  - kb
+  kb_summary: 上传webp格式图片，应被前端拦截或后端拒绝
+  kb_expected: 提示图片格式不支持，上传失败
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/test.webp
+  expect_format_valid: false
+  expect_error_keyword: 格式
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-07
+  scenario: negative_身份证正面pdf格式被拦截
+  module: 申请资料
+  tags:
+  - negative
+  - upload_page
+  - kb
+  kb_summary: 上传pdf文件，应被前端拦截或后端拒绝
+  kb_expected: 提示图片格式不支持，上传失败
+  upload_target: id_front
+  upload_file: /Users/tanzsongsen/Downloads/test.pdf
+  expect_format_valid: false
+  expect_error_keyword: 格式
+
+# ---------- 行驶证图片格式校验 ----------
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-08
+  scenario: positive_行驶证jpg格式上传成功
+  module: 申请资料
+  tags:
+  - positive
+  - upload_page
+  - kb
+  kb_summary: 上传jpg格式的行驶证图片，应上传成功
+  kb_expected: 上传成功，无格式错误提示
+  upload_target: driving_license
+  upload_file: /Users/tanzsongsen/Downloads/驾驶证正面.png
+  expect_format_valid: true
+- channel_id: JDYFWH
+  product_id: JDYPRD01
+  phone: ${random_phone_cn}
+  captcha: '111111'
+  car_number: 浙A24D3M
+  tc_id: TC-U-09
+  scenario: negative_行驶证gif格式被拦截
+  module: 申请资料
+  tags:
+  - negative
+  - upload_page
+  - kb
+  kb_summary: 上传gif格式行驶证图片，应被拦截
+  kb_expected: 提示图片格式不支持，上传失败
+  upload_target: driving_license
+  upload_file: /Users/tanzsongsen/Downloads/test.gif
+  expect_format_valid: false
+  expect_error_keyword: 格式
