@@ -2,22 +2,30 @@ name: pytest allure report
 
 
 on:
+
   workflow_dispatch:
+
   push:
     branches:
       - main
 
 
 concurrency:
+
   group: pytest
+
   cancel-in-progress: true
+
 
 
 jobs:
 
+
   test:
 
+
     runs-on: self-hosted
+
 
 
     steps:
@@ -55,22 +63,20 @@ jobs:
 
 
 
-    - name: Generate Allure Report
+    - name: Check Allure Report
       if: always()
       run: |
 
-        rm -rf reports
+        ls -la reports
 
-        allure generate \
-        reports/allure-results \
-        -o reports/allure-report \
-        --clean
+        ls -la reports/allure-report
 
 
 
     - name: Upload allure report
       if: always()
       uses: actions/upload-artifact@v4
+
       with:
 
         name: allure-report
@@ -93,11 +99,9 @@ jobs:
 
 
 
-
-
-
     - name: Upload failed videos
       if: failure()
+
       uses: actions/upload-artifact@v4
 
       with:
@@ -105,6 +109,7 @@ jobs:
         name: playwright-video
 
         path: test-results/
+
 
 
     - name: Send Feishu Message
@@ -121,7 +126,7 @@ jobs:
           "msg_type":"text",
           "content":{
              "text":
-             "自动化测试完成\n\n报告地址:\nhttps://tzs123.github.io/auto-test/"
+             "自动化测试完成\n\nAllure报告:\nhttps://tzs123.github.io/auto-test/"
           }
         }
         ' \
