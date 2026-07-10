@@ -46,15 +46,14 @@ tests/ui/test_jdy_home.py \
 
 echo "--- 生成报告 ---"
 
-allure generate "$RESULTS" \
+mkdir -p "$BASE_DIR/reports/allure-report"
+
+allure generate \
+"$RESULTS" \
 -o "$BASE_DIR/reports/allure-report" \
---clean || true
+--clean
 
 
-echo "allure文件数量:"
-find "$RESULTS" -type f | wc -l
+echo "检查报告目录"
 
-
-echo "====== 自动化执行完成 ======"
-
-exit 0
+ls -la "$BASE_DIR/reports/allure-report"
