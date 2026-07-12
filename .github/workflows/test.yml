@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
 
   push:
+
     branches:
+
       - main
 
 
@@ -16,6 +18,12 @@ concurrency:
   group: pytest
 
   cancel-in-progress: true
+
+
+
+permissions:
+
+  contents: write
 
 
 
@@ -32,7 +40,6 @@ jobs:
     steps:
 
 
-
     # =========================
     # 拉取代码
     # =========================
@@ -44,16 +51,37 @@ jobs:
 
 
     # =========================
-    # Python检查
+    # Python环境
     # =========================
 
     - name: Check Python
 
-      run: |
+      run:
 
         python3 --version
 
         pip3 --version
+
+
+
+    # =========================
+    # pip缓存
+    # =========================
+
+    - name: Cache pip
+
+      uses: actions/cache@v4
+
+      with:
+
+        path: ~/Library/Caches/pip
+
+        key: pip-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+        restore-keys:
+
+          |
+          pip-${{ runner.os }}-
 
 
 
@@ -63,19 +91,19 @@ jobs:
 
     - name: Install dependencies
 
-      run: |
+      run:
 
         pip3 install -r requirements.txt
 
 
 
     # =========================
-    # 安装Playwright
+    # Playwright
     # =========================
 
     - name: Install playwright
 
-      run: |
+      run:
 
         playwright install chromium
 
@@ -98,7 +126,7 @@ jobs:
 
 
     # =========================
-    # 生成Allure报告
+    # Allure报告
     # =========================
 
     - name: Generate Allure Report
@@ -118,7 +146,7 @@ jobs:
 
 
     # =========================
-    # 生成测试统计
+    # 测试统计
     # =========================
 
     - name: Generate Test Summary
@@ -128,9 +156,6 @@ jobs:
       run: |
 
         python3 utils/allure_summary.py
-
-
-        echo "===== summary ====="
 
 
         cat reports/summary.json
@@ -152,16 +177,16 @@ jobs:
 
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
-        publish_dir: reports/allure-report
+        publish_dir: ./reports/allure-report
 
         publish_branch: gh-pages
 
-        keep_files: false
+        force_orphan: true
 
 
 
     # =========================
-    # 上传Allure报告
+    # 保存报告
     # =========================
 
     - name: Upload Allure Report

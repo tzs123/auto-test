@@ -13,96 +13,243 @@ def main():
         "r",
         encoding="utf-8"
     ) as f:
-        data=json.load(f)
+        data = json.load(f)
 
 
-    webhook=os.environ.get(
+    webhook = os.environ.get(
         "FEISHU_WEBHOOK"
     )
 
 
-    card={
-        "msg_type":"interactive",
-        "card":{
-            "config":{
-                "wide_screen_mode":True
+    if not webhook:
+        raise Exception(
+            "FEISHU_WEBHOOK 未配置"
+        )
+
+
+    status = str(
+        data.get("status", "")
+    )
+
+
+    if (
+        "success" in status.lower()
+        or "passed" in status.lower()
+        or "通过" in status
+    ):
+
+        template = "green"
+        title = "✅ 自动化测试通过"
+
+    else:
+
+        template = "red"
+        title = "❌ 自动化测试失败"
+
+
+
+    card = {
+
+        "msg_type": "interactive",
+
+        "card": {
+
+
+            "config": {
+                "wide_screen_mode": True
             },
 
-            "header":{
-                "template":"red",
-                "title":{
-                    "tag":"plain_text",
-                    "content":"🚀 自动化测试完成"
+
+            "header": {
+
+                "template": template,
+
+                "title": {
+
+                    "tag": "plain_text",
+
+                    "content": title
+
                 }
+
             },
 
 
-            "elements":[
+            "elements": [
+
+
+                # ======================
+                # 第一排：核心指标
+                # ======================
 
                 {
-                    "tag":"div",
-                    "text":{
-                        "tag":"lark_md",
-                        "content":f"""
-**项目：** {data['project']}
 
-**状态：** {data['status']}
+                    "tag": "div",
 
-**通过率：** {data['rate']}
+                    "fields": [
 
-**总计：** {data['total']}
+                        {
 
-**通过：** {data['passed']}
+                            "is_short": True,
 
-**失败：** {data['failed']}
+                            "text": {
 
-**跳过：** {data['skipped']}
+                                "tag": "lark_md",
 
-**耗时：** {data['duration']}
+                                "content":
+                                    f"**📋 总用例**\n{data['total']}"
 
-**开始时间：** {data['start_time']}
+                            }
 
-**结束时间：** {data['end_time']}
+                        },
 
-**Allure报告：**
-https://tzs123.github.io/auto-test/
-"""
-                    }
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                    f"**✅ 通过**\n{data['passed']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                    f"**❌ 失败**\n{data['failed']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                    f"**📈 通过率**\n{data['rate']}"
+
+                            }
+
+                        }
+
+                    ]
+
                 },
 
 
                 {
-                    "tag":"action",
+                    "tag": "hr"
+                },
 
-                    "actions":[
 
-                        {
-                            "tag":"button",
+                # ======================
+                # 第二部分：执行信息
+                # ======================
 
-                            "type":"primary",
 
-                            "text":{
-                                "tag":"plain_text",
-                                "content":"📊 查看 Allure 报告"
-                            },
+                {
 
-                            "url":
-                            "https://tzs123.github.io/auto-test/"
-                        }
+                    "tag": "div",
 
-                    ]
+                    "text": {
+
+                        "tag": "lark_md",
+
+                        "content": f"""
+**项目**
+{data['project']}
+
+
+**状态**
+{data['status']}
+
+
+**跳过**
+{data['skipped']}
+
+
+**执行耗时**
+{data['duration']}
+
+
+**开始时间**
+{data['start_time']}
+
+
+**结束时间**
+{data['end_time']}
+"""
+
+                    }
+
+                },
+
+
+                {
+                    "tag": "hr"
+                },
+
+
+                {
+
+                    "tag": "div",
+
+                    "text": {
+
+                        "tag": "lark_md",
+
+                        "content":
+                            "🤖 GitHub Actions 自动生成测试报告"
+
+                    }
+
                 }
+
+
             ]
+
         }
+
     }
 
 
 
-    requests.post(
+    response = requests.post(
+
         webhook,
-        json=card
+
+        json=card,
+
+        timeout=10
+
     )
 
 
-if __name__=="__main__":
+    print(
+        response.text
+    )
+
+
+
+if __name__ == "__main__":
+
     main()
