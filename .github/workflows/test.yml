@@ -28,27 +28,31 @@ jobs:
     runs-on: self-hosted
 
 
+
     steps:
 
 
+
     # =========================
-    # 拉代码
+    # 拉取代码
     # =========================
 
     - name: Checkout
+
       uses: actions/checkout@v4
 
 
 
     # =========================
-    # Python环境
+    # Python检查
     # =========================
 
     - name: Check Python
 
-      run:
+      run: |
 
         python3 --version
+
         pip3 --version
 
 
@@ -59,19 +63,19 @@ jobs:
 
     - name: Install dependencies
 
-      run:
+      run: |
 
         pip3 install -r requirements.txt
 
 
 
     # =========================
-    # Playwright
+    # 安装Playwright
     # =========================
 
     - name: Install playwright
 
-      run:
+      run: |
 
         playwright install chromium
 
@@ -85,7 +89,7 @@ jobs:
 
       continue-on-error: true
 
-      run:
+      run: |
 
         chmod +x run.sh
 
@@ -101,7 +105,7 @@ jobs:
 
       if: always()
 
-      run:
+      run: |
 
         mkdir -p reports/allure-report
 
@@ -121,7 +125,7 @@ jobs:
 
       if: always()
 
-      run:
+      run: |
 
         python3 utils/allure_summary.py
 
@@ -134,7 +138,7 @@ jobs:
 
 
     # =========================
-    # 发布Allure到Pages
+    # 发布GitHub Pages
     # =========================
 
     - name: Deploy Allure Report
@@ -157,7 +161,7 @@ jobs:
 
 
     # =========================
-    # 上传报告
+    # 上传Allure报告
     # =========================
 
     - name: Upload Allure Report
@@ -184,118 +188,13 @@ jobs:
       if: always()
 
 
+      env:
+
+        FEISHU_WEBHOOK:
+
+          ${{ secrets.FEISHU_WEBHOOK }}
+
+
       run: |
 
-
-        PROJECT=$(jq -r '.project' reports/summary.json)
-
-        STATUS=$(jq -r '.status' reports/summary.json)
-
-        RATE=$(jq -r '.rate' reports/summary.json)
-
-        TOTAL=$(jq -r '.total' reports/summary.json)
-
-        PASSED=$(jq -r '.passed' reports/summary.json)
-
-        FAILED=$(jq -r '.failed' reports/summary.json)
-
-        SKIPPED=$(jq -r '.skipped' reports/summary.json)
-
-        DURATION=$(jq -r '.duration' reports/summary.json)
-
-        START=$(jq -r '.start_time' reports/summary.json)
-
-        END=$(jq -r '.end_time' reports/summary.json)
-
-
-
-        curl \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -d '
-{
- "msg_type":"interactive",
-
- "card":{
-
-   "config":{
-     "wide_screen_mode":true
-   },
-
-
-   "header":{
-
-     "template":"red",
-
-     "title":{
-
-       "tag":"plain_text",
-
-       "content":"🚀 自动化测试完成"
-
-     }
-
-   },
-
-
-   "elements":[
-
-
-     {
-
-       "tag":"div",
-
-       "text":{
-
-         "tag":"lark_md",
-
-         "content":
-"**项目：** '"$PROJECT"'\n\n**状态：** '"$STATUS"'\n\n**通过率：** '"$RATE"'\n\n**总计：** '"$TOTAL"'\n\n**通过：** '"$PASSED"'\n\n**失败：** '"$FAILED"'\n\n**跳过：** '"$SKIPPED"'\n\n**耗时：** '"$DURATION"'\n\n**开始时间：** '"$START"'\n\n**结束时间：** '"$END"'"
-
-       }
-
-     },
-
-
-     {
-
-       "tag":"action",
-
-       "actions":[
-
-
-         {
-
-           "tag":"button",
-
-           "type":"primary",
-
-
-           "text":{
-
-             "tag":"plain_text",
-
-             "content":"📊 查看 Allure 报告"
-
-           },
-
-
-           "url":
-
-           "https://tzs123.github.io/auto-test/"
-
-         }
-
-
-       ]
-
-     }
-
-
-   ]
-
- }
-
-}
-' \
-${{ secrets.FEISHU_WEBHOOK }}
+        python3 utils/send_feishu.py
