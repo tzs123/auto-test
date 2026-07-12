@@ -10,6 +10,7 @@ on:
       - main
 
 
+
 concurrency:
 
   group: pytest
@@ -20,7 +21,9 @@ concurrency:
 
 jobs:
 
+
   test:
+
 
     runs-on: self-hosted
 
@@ -28,69 +31,118 @@ jobs:
     steps:
 
 
+    # =========================
+    # 拉代码
+    # =========================
+
     - name: Checkout
       uses: actions/checkout@v4
 
 
 
+    # =========================
+    # Python环境
+    # =========================
+
     - name: Check Python
-      run: |
+
+      run:
+
         python3 --version
         pip3 --version
 
 
 
+    # =========================
+    # 安装依赖
+    # =========================
+
     - name: Install dependencies
-      run: |
+
+      run:
+
         pip3 install -r requirements.txt
 
 
 
+    # =========================
+    # Playwright
+    # =========================
+
     - name: Install playwright
-      run: |
+
+      run:
+
         playwright install chromium
 
 
 
+    # =========================
+    # 执行测试
+    # =========================
+
     - name: Run Test
+
       continue-on-error: true
-      run: |
+
+      run:
+
         chmod +x run.sh
+
         ./run.sh
 
 
 
-    # ==============================
-    # 生成 Allure 报告
-    # ==============================
+    # =========================
+    # 生成Allure报告
+    # =========================
 
     - name: Generate Allure Report
+
       if: always()
-      run: |
+
+      run:
 
         mkdir -p reports/allure-report
 
+
         allure generate \
-          reports/allure-results \
-          -o reports/allure-report \
-          --clean
+        reports/allure-results \
+        -o reports/allure-report \
+        --clean
+
+
+
+    # =========================
+    # 生成测试统计
+    # =========================
 
     - name: Generate Test Summary
+
       if: always()
-      run: |
+
+      run:
 
         python3 utils/allure_summary.py
 
+
+        echo "===== summary ====="
+
+
         cat reports/summary.json
 
-    # ==============================
-    # 发布 GitHub Pages
-    # ==============================
+
+
+    # =========================
+    # 发布Allure到Pages
+    # =========================
 
     - name: Deploy Allure Report
+
       if: always()
 
       uses: peaceiris/actions-gh-pages@v4
+
 
       with:
 
@@ -104,13 +156,33 @@ jobs:
 
 
 
-    # ==============================
+    # =========================
+    # 上传报告
+    # =========================
+
+    - name: Upload Allure Report
+
+      if: always()
+
+      uses: actions/upload-artifact@v4
+
+
+      with:
+
+        name: allure-report
+
+        path: reports/allure-report
+
+
+
+    # =========================
     # 飞书通知
-    # ==============================
+    # =========================
 
     - name: Send Feishu Message
 
       if: always()
+
 
       run: |
 
@@ -140,78 +212,90 @@ jobs:
         curl \
         -X POST \
         -H "Content-Type: application/json" \
-        -d "
+        -d '
 {
- \"msg_type\":\"interactive\",
+ "msg_type":"interactive",
 
- \"card\":{
+ "card":{
 
- \"header\":{
-
- \"template\":\"red\",
-
- \"title\":{
-
- \"tag\":\"plain_text\",
-
- \"content\":\"🚀 自动化测试完成\"
-
- }
-
- },
+   "config":{
+     "wide_screen_mode":true
+   },
 
 
- \"elements\":[
+   "header":{
+
+     "template":"red",
+
+     "title":{
+
+       "tag":"plain_text",
+
+       "content":"🚀 自动化测试完成"
+
+     }
+
+   },
 
 
- {
-
- \"tag\":\"div\",
-
- \"text\":{
-
- \"tag\":\"lark_md\",
-
- \"content\":\"**项目：** ${PROJECT}\\n\\n**状态：** ${STATUS}\\n\\n**通过率：** ${RATE}\\n\\n**总计：** ${TOTAL}\\n\\n**通过：** ${PASSED}\\n\\n**失败：** ${FAILED}\\n\\n**跳过：** ${SKIPPED}\\n\\n**耗时：** ${DURATION}\\n\\n**开始时间：** ${START}\\n\\n**结束时间：** ${END}\"
-
- }
-
- },
+   "elements":[
 
 
- {
+     {
 
- \"tag\":\"action\",
+       "tag":"div",
 
- \"actions\":[
+       "text":{
 
- {
+         "tag":"lark_md",
 
- \"tag\":\"button\",
+         "content":
+"**项目：** '"$PROJECT"'\n\n**状态：** '"$STATUS"'\n\n**通过率：** '"$RATE"'\n\n**总计：** '"$TOTAL"'\n\n**通过：** '"$PASSED"'\n\n**失败：** '"$FAILED"'\n\n**跳过：** '"$SKIPPED"'\n\n**耗时：** '"$DURATION"'\n\n**开始时间：** '"$START"'\n\n**结束时间：** '"$END"'"
 
- \"type\":\"primary\",
+       }
 
- \"text\":{
-
- \"tag\":\"plain_text\",
-
- \"content\":\"📊 查看 Allure 报告\"
-
- },
-
- \"url\":\"https://tzs123.github.io/auto-test/\"
-
- }
-
- ]
-
- }
+     },
 
 
- ]
+     {
+
+       "tag":"action",
+
+       "actions":[
+
+
+         {
+
+           "tag":"button",
+
+           "type":"primary",
+
+
+           "text":{
+
+             "tag":"plain_text",
+
+             "content":"📊 查看 Allure 报告"
+
+           },
+
+
+           "url":
+
+           "https://tzs123.github.io/auto-test/"
+
+         }
+
+
+       ]
+
+     }
+
+
+   ]
 
  }
 
 }
-" \
+' \
 ${{ secrets.FEISHU_WEBHOOK }}
