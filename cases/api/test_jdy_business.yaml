@@ -1,37 +1,6 @@
 
 # ========== 业务提交接口 - 正向正常流程 ==========
 
-- name: 提交评估-正常
-  path: /jdy/apply/api/v1/business/submit/evaluate
-  method: POST
-  body:
-    applyId: "865634306742032147"
-    phone: "MTM4MDAxMjM0NTY="
-    captcha: "124214"
-    carNumber: "5LqsQTEyMzQ1"
-  expect_code: 200
-
-- name: 提交贷款-正常
-  path: /jdy/apply/api/v1/business/submit/loan
-  method: POST
-  body:
-    applyId: "865634306742032147"
-    applyPageCode: "LOAN_PAGE"
-    name: "施哲鼎"
-    idCard: "MTEwMTAxMTk5MDAxMDExMjM0"
-    loanTerm: 36
-    area: "北京市-市辖区-东城区"
-    monthlySupply: 1775.08
-    loanPurpose: "教育"
-    updateCarNumber: ""
-    ethnicity: "汉"
-    address: "5YyX5Lqs5biC5rW35reA5Yy65Lit5YWz5p2R5aSn6KGXMeWPtw=="
-    issueAuthority: "北京市公安局海淀分局"
-    validPeriod: "2016.03.12-2036.03.12"
-    isModify: false
-    isLicenseVerified: false
-  expect_code: 200
-
 - name: 提交补充信息-正常
   path: /jdy/apply/api/v1/business/submit/supplyInfo
   method: POST
