@@ -13,7 +13,9 @@ def main():
         "r",
         encoding="utf-8"
     ) as f:
+
         data = json.load(f)
+
 
 
     webhook = os.environ.get(
@@ -21,35 +23,32 @@ def main():
     )
 
 
-    if not webhook:
-        raise Exception(
-            "FEISHU_WEBHOOK 未配置"
-        )
-
-
     failed = int(
-        data.get("failed", 0)
+        data.get(
+            "failed",
+            0
+        )
     )
 
 
-    # 测试状态颜色
     if failed == 0:
 
         template = "green"
-
-        title = "🚀 自动化测试完成"
 
     else:
 
         template = "red"
 
-        title = "🚨 自动化测试完成"
-
 
 
     card = {
 
-        "msg_type": "interactive",
+
+        "msg_type":
+
+            "interactive",
+
+
 
         "card": {
 
@@ -61,38 +60,58 @@ def main():
             },
 
 
+
             "header": {
 
-                "template": template,
+
+                "template":
+
+                    template,
+
 
                 "title": {
 
-                    "tag": "plain_text",
+                    "tag":
 
-                    "content": title
+                        "plain_text",
+
+
+                    "content":
+
+                        "🚀 自动化测试完成"
 
                 }
 
             },
 
 
+
             "elements": [
 
 
-                # ======================
-                # 项目 + 状态
-                # ======================
 
                 {
 
-                    "tag": "div",
+                    "tag":
+
+                        "div",
+
 
                     "text": {
 
-                        "tag": "lark_md",
 
-                        "content": f"""
+                        "tag":
+
+                            "lark_md",
+
+
+
+                        "content":
+
+f"""
 **项目：** {data['project']}
+
+**环境：** {data.get('env','未配置')}
 
 **状态：** {data['status']}
 """
@@ -102,27 +121,33 @@ def main():
                 },
 
 
-                # ======================
-                # 核心数据横排
-                # ======================
 
                 {
 
-                    "tag": "div",
+                    "tag":
+
+                        "div",
+
+
 
                     "fields": [
 
 
                         {
 
-                            "is_short": True,
+                            "is_short":
+
+                                True,
 
                             "text": {
 
-                                "tag": "lark_md",
+                                "tag":
+
+                                    "lark_md",
 
                                 "content":
-                                f"**总计**\n{data['total']}"
+
+                                    f"**总计**\n{data['total']}"
 
                             }
 
@@ -131,14 +156,19 @@ def main():
 
                         {
 
-                            "is_short": True,
+                            "is_short":
+
+                                True,
 
                             "text": {
 
-                                "tag": "lark_md",
+                                "tag":
+
+                                    "lark_md",
 
                                 "content":
-                                f"**通过**\n{data['passed']}"
+
+                                    f"**通过**\n{data['passed']}"
 
                             }
 
@@ -147,14 +177,19 @@ def main():
 
                         {
 
-                            "is_short": True,
+                            "is_short":
+
+                                True,
 
                             "text": {
 
-                                "tag": "lark_md",
+                                "tag":
+
+                                    "lark_md",
 
                                 "content":
-                                f"**失败**\n{data['failed']}"
+
+                                    f"**失败**\n{data['failed']}"
 
                             }
 
@@ -163,47 +198,80 @@ def main():
 
                         {
 
-                            "is_short": True,
+                            "is_short":
+
+                                True,
 
                             "text": {
 
-                                "tag": "lark_md",
+                                "tag":
+
+                                    "lark_md",
 
                                 "content":
-                                f"**通过率**\n{data['rate']}"
+
+                                    f"**跳过**\n{data['skipped']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short":
+
+                                True,
+
+                            "text": {
+
+                                "tag":
+
+                                    "lark_md",
+
+                                "content":
+
+                                    f"**通过率**\n{data['rate']}"
 
                             }
 
                         }
-
 
                     ]
 
                 },
 
 
+
                 {
 
-                    "tag": "hr"
+                    "tag":
+
+                        "hr"
 
                 },
 
 
-                # ======================
-                # 执行信息
-                # ======================
 
                 {
 
-                    "tag": "div",
+                    "tag":
+
+                        "div",
+
 
                     "text": {
 
-                        "tag": "lark_md",
 
-                        "content": f"""
+                        "tag":
+
+                            "lark_md",
+
+
+                        "content":
+
+f"""
 ⏱ **耗时：** {data['duration']}
-
 
 🕒 **执行时间：**
 
@@ -215,41 +283,52 @@ def main():
                 },
 
 
-                # ======================
-                # Allure按钮
-                # ======================
 
                 {
 
-                    "tag": "action",
+                    "tag":
+
+                        "action",
+
 
                     "actions": [
 
+
                         {
 
-                            "tag": "button",
+                            "tag":
+
+                                "button",
+
 
                             "text": {
 
-                                "tag": "plain_text",
+                                "tag":
+
+                                    "plain_text",
+
 
                                 "content":
-                                "📊 查看 Allure 报告"
+
+                                    "📊 查看 Allure 报告"
 
                             },
 
+
                             "type":
-                            "primary",
+
+                                "primary",
+
 
                             "url":
-                            "https://tzs123.github.io/auto-test/"
+
+                                data["allure_url"]
 
                         }
 
                     ]
 
                 }
-
 
             ]
 
@@ -259,7 +338,7 @@ def main():
 
 
 
-    response = requests.post(
+    requests.post(
 
         webhook,
 
@@ -267,11 +346,6 @@ def main():
 
         timeout=10
 
-    )
-
-
-    print(
-        response.text
     )
 
 

@@ -1,7 +1,7 @@
 import os
 import json
 import glob
-import time
+import yaml
 from datetime import datetime
 
 
@@ -9,8 +9,26 @@ RESULT_PATH = "reports/allure-results"
 
 OUTPUT = "reports/summary.json"
 
+ENV_CONFIG = "config/env.yaml"
+
+
+
+def load_env_config():
+
+    with open(
+        ENV_CONFIG,
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        return yaml.safe_load(f)
+
+
 
 def parse_allure_result():
+
+    config = load_env_config()
+
 
     total = 0
     passed = 0
@@ -18,8 +36,10 @@ def parse_allure_result():
     broken = 0
     skipped = 0
 
+
     start_time = None
     end_time = None
+
 
 
     files = glob.glob(
@@ -37,10 +57,11 @@ def parse_allure_result():
                 encoding="utf-8"
             ) as f:
 
-                data=json.load(f)
+                data = json.load(f)
 
 
-            status=data.get(
+
+            status = data.get(
                 "status"
             )
 
@@ -48,25 +69,33 @@ def parse_allure_result():
             total += 1
 
 
-            if status=="passed":
+
+            if status == "passed":
+
                 passed += 1
 
-            elif status=="failed":
+
+            elif status == "failed":
+
                 failed += 1
 
-            elif status=="broken":
+
+            elif status == "broken":
+
                 broken += 1
 
-            elif status=="skipped":
+
+            elif status == "skipped":
+
                 skipped += 1
 
 
-            # 时间统计
-            start=data.get(
+
+            start = data.get(
                 "start"
             )
 
-            stop=data.get(
+            stop = data.get(
                 "stop"
             )
 
@@ -74,13 +103,16 @@ def parse_allure_result():
             if start:
 
                 if start_time is None or start < start_time:
-                    start_time=start
+
+                    start_time = start
+
 
 
             if stop:
 
                 if end_time is None or stop > end_time:
-                    end_time=stop
+
+                    end_time = stop
 
 
 
@@ -95,6 +127,7 @@ def parse_allure_result():
 
 
     real_failed = failed + broken
+
 
 
     if total:
@@ -113,71 +146,102 @@ def parse_allure_result():
     if start_time and end_time:
 
         duration = round(
-            (end_time-start_time)/1000,
+            (end_time - start_time) / 1000,
             2
         )
 
     else:
 
-        duration=0
+        duration = 0
 
 
 
-    result={
+    result = {
+
 
         "project":
-            "国信小米",
+
+            config.get(
+                "project",
+                ""
+            ),
+
+
+        "env":
+
+            config.get(
+                "env",
+                ""
+            ),
+
 
 
         "status":
+
             "❌ 存在失败"
-            if real_failed >0
+
+            if real_failed > 0
+
             else "✅ 全部通过",
 
 
+
         "total":
+
             total,
 
 
         "passed":
+
             passed,
 
 
         "failed":
+
             real_failed,
 
 
         "skipped":
+
             skipped,
 
 
         "rate":
+
             f"{rate}%",
 
 
+
         "duration":
+
             f"{duration}s",
 
 
+
         "start_time":
+
             datetime.fromtimestamp(
-                start_time/1000
+                start_time / 1000
             ).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             if start_time else "",
 
 
+
         "end_time":
+
             datetime.fromtimestamp(
-                end_time/1000
+                end_time / 1000
             ).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
             if end_time else "",
 
 
+
         "allure_url":
+
             "https://tzs123.github.io/auto-test/"
 
     }
@@ -188,6 +252,7 @@ def parse_allure_result():
         "reports",
         exist_ok=True
     )
+
 
 
     with open(
@@ -204,6 +269,7 @@ def parse_allure_result():
         )
 
 
+
     print(
         json.dumps(
             result,
@@ -214,6 +280,6 @@ def parse_allure_result():
 
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     parse_allure_result()
