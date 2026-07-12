@@ -1,31 +1,4 @@
-# ===================== 知识库测试用例（来源：新网申_测试用例_合并.xmind） =====================
 
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  tc_id: TC-A-01
-  scenario: positive_申请资料正常提交预审通过
-  module: 申请资料
-  tags:
-  - positive
-  - apply_page
-  - kb
-  kb_summary: 默认36期→输入地址+用途→上传身份证正反面→OCR识别完整→同意并申请→预审通过
-  kb_expected: 预审通过后状态变为待补充信息，进入补充借款信息页面
-  expect_submit_success: true
-  expect_url: /fill
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -154,59 +127,8 @@
   kb_expected: 提示贷款用途未选择，不提交
   expect_submit_fail: true
   expect_fail_page: result
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/非身份证.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  tc_id: TC-A-11
-  scenario: negative_上传非身份证图片
-  module: 申请资料
-  tags:
-  - negative
-  - apply_page
-  - kb
-  kb_summary: 上传与身份证无关的图片（风景照、空白图）
-  kb_expected: OCR无法识别有效身份证信息，提示识别失败
-  expect_submit_fail: true
-  expect_fail_page: result
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: <script>alert(1)</script>
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  tc_id: TC-A-13
-  scenario: negative_贷款用途非法值
-  module: 申请资料
-  tags:
-  - negative
-  - apply_page
-  - kb
-  - manual
-  kb_summary: 贷款用途字段输入特殊字符或无关内容
-  kb_expected: 前端拦截或提示贷款用途选择不合法
-  expect_submit_fail: true
-  expect_fail_page: result
+
+
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}

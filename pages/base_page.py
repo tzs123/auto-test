@@ -153,8 +153,46 @@ class BasePage:
         """
         在 van-picker / van-action-sheet 弹层内选择指定选项。
         移动端H5需要用touch事件。
+        对于 Vant van-picker-column 滚动式选择器，优先用 JS setColumnValue。
         """
-        # 优先用 Playwright locator + force click
+        # 优先用 Vant picker 实例的 setColumnValue（最可靠，兼容滚动式选择）
+        try:
+            success = self.page.evaluate("""(args) => {
+                // 查找可见的 van-picker 组件实例
+                const popups = document.querySelectorAll('.van-popup, .van-picker');
+                for (const popup of popups) {
+                    if (popup.offsetParent === null) continue;
+                    const picker = popup.__vue__ || popup.__vueParentComponent;
+                    if (picker && typeof picker.setColumnValue === 'function') {
+                        try {
+                            picker.setColumnValue(0, args.text);
+                            return true;
+                        } catch(e) {}
+                    }
+                    // Vant 4: 通过 van-picker-column 的 __vue__
+                    const columns = popup.querySelectorAll('.van-picker-column');
+                    for (const col of columns) {
+                        const vm = col.__vue__ || col.__vueParentComponent;
+                        if (vm && vm.setIndex) {
+                            // 找到目标选项的 index
+                            const items = col.querySelectorAll('.van-picker-column__item');
+                            for (let i = 0; i < items.length; i++) {
+                                if (items[i].textContent.trim() === args.text) {
+                                    vm.setIndex(i);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }""", {"text": option_text})
+            if success:
+                return True
+        except Exception:
+            pass
+
+        # 其次用 Playwright locator + force click
         selectors = [
             f'.van-picker-column__item:has-text("{option_text}")',
             f'.van-action-sheet__item:has-text("{option_text}")',
@@ -197,31 +235,64 @@ class BasePage:
         except Exception:
             return False
 
+    def _close_popup_vue_safe(self, timeout: int = 2000):
+        """Vue 兼容方式关闭残留的 van-popup/overlay。
+        优先点确认按钮（避免取消用户选择），其次点 overlay，绝不 display:none。"""
+        for _ in range(3):
+            overlay = self.page.locator('.van-overlay:visible')
+            popup = self.page.locator('.van-popup:visible')
+            if overlay.count() == 0 and popup.count() == 0:
+                return
+            # 优先点确认按钮（保留选择结果）
+            for sel in ['.van-picker__confirm', 'button:has-text("确认")']:
+                try:
+                    btn = self.page.locator(sel)
+                    if btn.is_visible(timeout=500):
+                        btn.click(force=True)
+                        self.page.wait_for_timeout(500)
+                        # 检查是否关闭
+                        if self.page.locator('.van-overlay:visible').count() == 0:
+                            return
+                except Exception:
+                    pass
+            # 其次点击 overlay（Vue 会执行关闭回调）
+            if overlay.count() > 0:
+                try:
+                    overlay.first.click(force=True)
+                    self.page.wait_for_timeout(500)
+                except Exception:
+                    pass
+            # 最后尝试取消按钮
+            for sel in ['.van-picker__cancel', 'button:has-text("取消")']:
+                try:
+                    btn = self.page.locator(sel)
+                    if btn.is_visible(timeout=500):
+                        btn.click(force=True)
+                        self.page.wait_for_timeout(300)
+                except Exception:
+                    pass
+            self.page.wait_for_timeout(200)
+
     @allure.step("确认 Picker 选择")
     def confirm_picker(self, timeout: int = 2000):
-        """点击 van-picker 的确认按钮（移动端H5需要用touch事件）。"""
+        """点击 van-picker 的确认按钮。等待动画完成后再判定弹窗是否关闭，
+        绝不点击 overlay 取消选择。"""
         # 先尝试 Playwright locator
         for sel in ['.van-picker__confirm', 'button:has-text("确认")']:
             try:
                 btn = self.page.locator(sel)
                 if btn.is_visible(timeout=timeout):
                     btn.click(force=True)
-                    self.page.wait_for_timeout(300)
+                    # 等待动画完成（Vant 默认动画 300ms，多等一些）
+                    self.page.wait_for_timeout(800)
                     # 检查弹窗是否关闭
                     popup = self.page.locator('.van-popup .van-picker:visible')
                     if popup.count() == 0:
                         return
             except Exception:
                 pass
-        # 如果弹窗还在，用 touch 事件
+        # 如果弹窗还在，用 touch 事件再试一次
         self.page.evaluate("""() => {
-            const btn = document.querySelector('.van-picker__confirm');
-            if (btn) {
-                btn.dispatchEvent(new TouchEvent('touchstart', {bubbles: true}));
-                btn.dispatchEvent(new TouchEvent('touchend', {bubbles: true}));
-            }
-            // 备选：查找确认按钮
-            const confirmBtn = document.querySelector('button');
             document.querySelectorAll('button').forEach(b => {
                 if (b.textContent.trim() === '确认') {
                     b.dispatchEvent(new TouchEvent('touchstart', {bubbles: true}));
@@ -229,11 +300,26 @@ class BasePage:
                 }
             });
         }""")
-        self.page.wait_for_timeout(500)
-        # 确保弹窗关闭
+        self.page.wait_for_timeout(800)
+        # 检查弹窗是否关闭
+        popup = self.page.locator('.van-popup .van-picker:visible')
+        if popup.count() == 0:
+            return
+        # 最后兜底：用 JS 直接触发 Vue picker 实例的 onConfirm
         self.page.evaluate("""() => {
-            document.querySelectorAll('.van-popup').forEach(p => {
-                if (p.querySelector('.van-picker')) p.style.display = 'none';
-            });
-            document.querySelectorAll('.van-overlay').forEach(o => o.style.display = 'none');
+            const popups = document.querySelectorAll('.van-popup');
+            for (const popup of popups) {
+                if (popup.offsetParent === null) continue;
+                const vm = popup.__vue__ || popup.__vueParentComponent;
+                if (vm && vm.ctx && typeof vm.ctx.onConfirm === 'function') {
+                    vm.ctx.onConfirm();
+                    return;
+                }
+                // Vant 4 的 emit 方式
+                if (vm && vm.emit) {
+                    vm.emit('confirm');
+                    return;
+                }
+            }
         }""")
+        self.page.wait_for_timeout(500)

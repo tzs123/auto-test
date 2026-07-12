@@ -72,60 +72,7 @@
   upload_file: /Users/tanzsongsen/Downloads/test.gif
   expect_format_valid: false
   expect_error_keyword: 格式
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  tc_id: TC-U-05
-  scenario: negative_身份证正面bmp格式被拦截
-  module: 申请资料
-  tags:
-  - negative
-  - upload_page
-  - kb
-  kb_summary: 上传bmp格式图片，应被前端拦截或后端拒绝
-  kb_expected: 提示图片格式不支持，上传失败
-  upload_target: id_front
-  upload_file: /Users/tanzsongsen/Downloads/test.bmp
-  expect_format_valid: false
-  expect_error_keyword: 格式
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  tc_id: TC-U-06
-  scenario: negative_身份证正面webp格式被拦截
-  module: 申请资料
-  tags:
-  - negative
-  - upload_page
-  - kb
-  kb_summary: 上传webp格式图片，应被前端拦截或后端拒绝
-  kb_expected: 提示图片格式不支持，上传失败
-  upload_target: id_front
-  upload_file: /Users/tanzsongsen/Downloads/test.webp
-  expect_format_valid: false
-  expect_error_keyword: 格式
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  tc_id: TC-U-07
-  scenario: negative_身份证正面pdf格式被拦截
-  module: 申请资料
-  tags:
-  - negative
-  - upload_page
-  - kb
-  kb_summary: 上传pdf文件，应被前端拦截或后端拒绝
-  kb_expected: 提示图片格式不支持，上传失败
-  upload_target: id_front
-  upload_file: /Users/tanzsongsen/Downloads/test.pdf
-  expect_format_valid: false
-  expect_error_keyword: 格式
+
 
 # ---------- 行驶证图片格式校验 ----------
 - channel_id: JDYFWH

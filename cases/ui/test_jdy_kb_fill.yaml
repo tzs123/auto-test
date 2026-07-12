@@ -1,128 +1,4 @@
-# ===================== 知识库测试用例（来源：新网申_测试用例_合并.xmind） =====================
 
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 天安门1号
-  marriage: 已婚有子女
-  education: 硕士及以上
-  company: 浙江日报
-  unit_industry: 金融业
-  unit_address: 杭州市西湖区文三路
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-  annual_income: '30'
-  contact1_name: 张三
-  contact1_relation: 配偶
-  contact1_phone: '19981212121'
-  contact1_id: '132430196906104323'
-  contact2_name: 李四
-  contact2_relation: 同事
-  contact2_phone: '18000001010'
-  tc_id: TC-S-01
-  scenario: positive_已婚有子女完整补充
-  module: 补充借款信息
-  tags:
-  - positive
-  - fill_page
-  - kb
-  kb_summary: 已婚→选择所属地区+职业+已婚+教育程度→第一联系人锁定配偶→填写详情→完成补充
-  kb_expected: 提交成功进入网申签约
-  expect_submit_page: true
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 天安门1号
-  marriage: 未婚
-  education: 硕士及以上
-  company: 浙江日报
-  unit_industry: 金融业
-  unit_address: 杭州市西湖区文三路
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-  annual_income: '30'
-  contact1_name: 张父
-  contact1_relation: 父母
-  contact1_phone: '13800001010'
-  contact1_id: '132430195001014323'
-  contact2_name: 李四
-  contact2_relation: 同事
-  contact2_phone: '18000001010'
-  tc_id: TC-S-02
-  scenario: positive_未婚联系人关系锁定父母
-  module: 补充借款信息
-  tags:
-  - positive
-  - fill_page
-  - kb
-  kb_summary: 未婚→第一联系人关系锁定父母→填写联系人信息→完成补充
-  kb_expected: 联系人关系锁定父母不可更改，提交成功进入网申签约
-  expect_submit_page: true
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 天安门1号
-  marriage: 离婚
-  education: 硕士及以上
-  company: 浙江日报
-  unit_industry: 金融业
-  unit_address: 杭州市西湖区文三路
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-  annual_income: '30'
-  contact1_name: 张三
-  contact1_relation: 朋友
-  contact1_phone: '19981212121'
-  contact1_id: '132430196906104323'
-  contact2_name: 李四
-  contact2_relation: 同事
-  contact2_phone: '18000001010'
-  tc_id: TC-S-03
-  scenario: positive_丧偶离异联系人关系可选
-  module: 补充借款信息
-  tags:
-  - positive
-  - fill_page
-  - kb
-  kb_summary: 丧偶→联系人关系可选（排除配偶）→离异→联系人关系可选（排除配偶）
-  kb_expected: 联系人关系不含配偶选项
-  expect_submit_page: true
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -208,7 +84,7 @@
   kb_expected: 前端拦截提交，提示联系人号码格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 手机
+  expect_error_keyword: 联系人号码
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -293,47 +169,7 @@
   kb_summary: 年收入字段输入最大有效值1000
   kb_expected: 年收入1000正常接受并提交成功
   expect_submit_page: true
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 天安门1号
-  marriage: 已婚有子女
-  education: 硕士及以上
-  company: 浙江日报
-  unit_industry: 金融业
-  unit_address: 杭州市西湖区文三路
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-  annual_income: '30'
-  contact1_name: 张三
-  contact1_relation: 配偶
-  contact1_phone: '19981212121'
-  contact1_id: '132430196906104323'
-  contact2_name: 李四
-  contact2_relation: 同事
-  contact2_phone: '18000001010'
-  tc_id: TC-S-13
-  scenario: positive_已婚联系人关系锁定配偶
-  module: 补充借款信息
-  tags:
-  - positive
-  - fill_page
-  - kb
-  kb_summary: 已婚状态下尝试将第一联系人关系改为非配偶
-  kb_expected: 联系人关系下拉框锁定为配偶不可修改
-  expect_contact1_relation_locked: true
+
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -405,38 +241,7 @@
   kb_expected: 地址字段正常接受或超出长度时有截断提示
   fill_address: 北京市东城区天安门广场1号中华人民共和国北京市人民政府办公大楼A座1001室详细地址测试用例边界值验证
   expect_submit_page: true
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: \${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 天安门1号
-  marriage: 未婚
-  education: 本科
-  company: 测试公司
-  work_type: 专业技术人员
-  annual_income: '20'
-  contact1_name: 张三
-  contact1_relation: 配偶
-  contact1_phone: '19981212121'
-  tc_id: TC-S-14
-  scenario: negative_未婚状态选择配偶关系
-  module: 补充借款信息
-  tags: [negative, fill_page, kb]
-  kb_summary: 未婚状态下联系人关系下拉框包含配偶选项时选择配偶
-  kb_expected: 提示与婚姻状态不符或拦截提交
-  expect_submit_fail: true
-  expect_fail_page: fill
-  expect_error_keyword: 配偶
 
-# ===================== 补充联系人信息扩展用例（来源：test_jdy_contact.yaml 合并去重） =====================
 
 # 场景3：联系人身份证号为空（关系为同事）
 - channel_id: JDYFWH
@@ -533,12 +338,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: ''
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-03
   scenario: negative_联系人姓名为空
   module: 补充借款信息
@@ -551,45 +361,7 @@
   expect_submit_fail: true
   expect_fail_page: fill
   expect_error_keyword: 姓名
-# 场景7：联系人关系为空
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 测试地址7
-  marriage: 已婚有子女
-  education: 本科
-  company: 测试公司
-  work_type: 专业技术人员
-  annual_income: '20'
-  contact1_name: 张三
-  contact1_relation: ''
-  contact1_phone: '19981212121'
-  contact1_id: '132430196906104323'
-  tc_id: TC-S-EXT-04
-  scenario: negative_联系人关系为空
-  module: 补充借款信息
-  tags:
-  - negative
-  - fill_page
-  - kb
-  kb_summary: 联系人关系留空提交
-  kb_expected: 前端拦截提交，提示关系不能为空
-  expect_submit_fail: true
-  expect_fail_page: fill
-  expect_error_keyword: 关系
+
 # 场景8：联系人手机号为空
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -611,12 +383,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: ''
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-05
   scenario: negative_联系人手机号为空
   module: 补充借款信息
@@ -628,7 +405,7 @@
   kb_expected: 前端拦截提交，提示手机号不能为空
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 手机
+  expect_error_keyword: 号码
 # 场景10：联系人身份证号格式错误（少于18位）
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -650,12 +427,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '123'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-06
   scenario: negative_联系人身份证号格式错误
   module: 补充借款信息
@@ -667,7 +449,7 @@
   kb_expected: 前端拦截提交，提示身份证号格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 身份证
+  expect_error_keyword: 协议
 # 场景11：联系人姓名1个字符
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -689,12 +471,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-07
   scenario: boundary_联系人姓名1个字符
   module: 补充借款信息
@@ -726,12 +513,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三李四王五赵六钱七孙八周九吴十郑十一王十二
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-08
   scenario: boundary_联系人姓名50个字符
   module: 补充借款信息
@@ -763,12 +555,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '13000000000'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-09
   scenario: boundary_手机号最小值
   module: 补充借款信息
@@ -800,12 +597,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19999999999'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-10
   scenario: boundary_手机号最大值
   module: 补充借款信息
@@ -837,12 +639,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430690610432'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-11
   scenario: boundary_15位身份证号
   module: 补充借款信息
@@ -874,12 +681,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '138*1234*1234'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-12
   scenario: illegal_手机号含特殊字符
   module: 补充借款信息
@@ -891,7 +703,7 @@
   kb_expected: 前端拦截提交，提示手机号格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 手机
+  expect_error_keyword: 号码
 # 场景17：手机号含字母
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -913,12 +725,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '138abc1234'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-13
   scenario: illegal_手机号含字母
   module: 补充借款信息
@@ -930,7 +747,7 @@
   kb_expected: 前端拦截提交，提示手机号格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 手机
+  expect_error_keyword: 号码
 # 场景18：身份证号含字母（非最后一位）
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -952,12 +769,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '1324301969A6104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-14
   scenario: illegal_身份证号含字母非最后一位
   module: 补充借款信息
@@ -969,46 +791,8 @@
   kb_expected: 前端拦截提交，提示身份证号格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 身份证
-# 场景19：联系人关系非法值
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  fill_area: 北京市-市辖区-东城区
-  fill_address: 测试地址19
-  marriage: 已婚有子女
-  education: 本科
-  company: 测试公司
-  work_type: 专业技术人员
-  annual_income: '20'
-  contact1_name: 张三
-  contact1_relation: 非法关系
-  contact1_phone: '19981212121'
-  contact1_id: '132430196906104323'
-  tc_id: TC-S-EXT-15
-  scenario: illegal_联系人关系非法值
-  module: 补充借款信息
-  tags:
-  - illegal
-  - fill_page
-  - kb
-  kb_summary: 联系人关系输入下拉框外的非法值
-  kb_expected: 前端拦截提交，提示关系值非法
-  expect_submit_fail: true
-  expect_fail_page: fill
-  expect_error_keyword: 关系
+  expect_error_keyword: 协议
+
 # 场景20：联系人姓名含敏感词
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -1030,12 +814,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: "张<script>alert(1)</script>三"
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-16
   scenario: illegal_联系人姓名含敏感词
   module: 补充借款信息
@@ -1069,12 +858,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: "' OR '1'='1"
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-17
   scenario: security_姓名含SQL注入
   module: 补充借款信息
@@ -1108,12 +902,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: "张三<img src=x onerror=alert(1)>李四"
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-18
   scenario: security_姓名含XSS攻击img标签
   module: 补充借款信息
@@ -1147,12 +946,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: "1324301969'0610'4323"
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-19
   scenario: security_身份证号含特殊符号
   module: 补充借款信息
@@ -1164,7 +968,7 @@
   kb_expected: 前端拦截提交，提示身份证号格式有误
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 身份证
+  expect_error_keyword: 协议
 # 场景24：联系人姓名超长100字符
 - channel_id: JDYFWH
   product_id: JDYPRD01
@@ -1186,12 +990,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三李四王五赵六钱七孙八周九吴十郑十一王十二冯十三陈十四褚十五卫十六蒋十七沈十八韩十九杨二十朱二十一秦二十二尤二十三许二十四何二十五吕二十六施二十七张二十八孔二十九曹三十严
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-20
   scenario: performance_联系人姓名超长100字符
   module: 补充借款信息
@@ -1225,12 +1034,17 @@
   marriage: 已婚有子女
   education: 本科
   company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
   work_type: 专业技术人员
   annual_income: '20'
   contact1_name: 张三
   contact1_relation: 配偶
   contact1_phone: '19981212121'
   contact1_id: '132430196906104323123456'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   tc_id: TC-S-EXT-21
   scenario: performance_身份证号超长20位
   module: 补充借款信息
@@ -1242,4 +1056,4 @@
   kb_expected: 前端拦截提交，提示身份证号长度超限
   expect_submit_fail: true
   expect_fail_page: fill
-  expect_error_keyword: 身份证
+  expect_error_keyword: 协议

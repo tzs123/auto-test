@@ -1,6 +1,7 @@
 """知识库 UI 测试共享流程（来源：新网申_测试用例_合并.xmind）"""
 import os
 import random
+import pytest
 import allure
 from pages.jdy_home_page import JdyHomePage
 from pages.jdy_result_page import JdyResultPage
@@ -14,7 +15,15 @@ def generate_random_phone():
 
 
 def load_kb_cases(yaml_file, tag=None, exclude_manual=True):
-    cases = load_cases(yaml_file)
+    import os as _os
+    from utils.yaml_loader import load_cases as _load
+    # YAML 文件不存在时，返回 skip 标记，避免 pytest 收集到无效的 [NOTSET] 用例
+    full_path = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))), yaml_file)
+    if not _os.path.exists(full_path):
+        return [pytest.param(None, marks=pytest.mark.skip(reason=f"YAML case file not found: {yaml_file}"))]
+    cases = _load(yaml_file)
+    if not cases:
+        return [pytest.param(None, marks=pytest.mark.skip(reason=f"No cases in YAML: {yaml_file}"))]
     for case in cases:
         if case.get("phone"):
             case["phone"] = generate_random_phone()
@@ -161,15 +170,10 @@ def flow_home(page, case):
             raise AssertionError("期望提交失败，但页面已跳转（提交成功了）")
         return
 
-    # 非首页负向用例：等待跳转到 /result
-    expected_url = case.get("expect_url", "/result")
+    # 首页提交后统一等待跳转到 /result（expect_url 是最终目标，不是首页跳转目标）
     try:
-        wait_url_contains(page, expected_url, timeout=10000)
+        wait_url_contains(page, "/result", timeout=10000)
     except TimeoutError:
-        if "/result" in page.url and expected_url == "/fill":
-            allure.attach(page.screenshot(), name="预审未通过，停留在结果页", attachment_type=allure.attachment_type.PNG)
-            allure.attach(f"期望跳转到'{expected_url}'，但实际停留在'/result'（预审未通过）", name="提交结果")
-            return
         if "/home" in page.url:
             error_msg = get_page_error(page)
             allure.attach(page.screenshot(), name="首页提交后未跳转", attachment_type=allure.attachment_type.PNG)
@@ -289,7 +293,8 @@ def flow_result(page, case):
             raise AssertionError("期望提交失败，但页面已跳转（提交成功了）")
         return
 
-    wait_url_contains(page, case.get("expect_url", "/fill"), timeout=15000)
+    # result 页提交后统一等待跳转到 /fill（expect_url 是最终目标，不是 result 页跳转目标）
+    wait_url_contains(page, "/fill", timeout=15000)
 
 
 def flow_fill(page, case):

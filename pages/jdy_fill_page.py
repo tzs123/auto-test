@@ -74,47 +74,91 @@ class JdyFillPage(BasePage):
         self._click_picker_by_index(idx, option_text)
 
     def _fill_by_index(self, cell_idx: int, value: str):
-        """优先用 Playwright 原生 fill，JS 作兜底，自动兼容 input/textarea"""
+        """优先用 Playwright 原生 fill，JS 作兜底，自动兼容 input/textarea。
+        如果原生 fill 后值仍为空，用 JS force set + dispatch 事件。
+        """
         cell = self.page.locator('.van-cell').nth(cell_idx)
         inp = cell.locator('input, textarea').first
         try:
-            # 原生 click + fill，最可靠
+            # 原生 click + fill
             inp.click(timeout=3000)
             inp.fill(value)
         except Exception:
-            # JS 兜底：使用 page.evaluate 参数传递，避免特殊字符破坏 JS 语法
-            self.page.evaluate("""
-                (args) => {
-                    const cells = document.querySelectorAll('.van-cell');
-                    const cell = cells[args.idx];
-                    if (!cell) return;
-                    const inp = cell.querySelector('input, textarea');
-                    if (!inp) return;
-                    const proto = inp instanceof HTMLTextAreaElement
-                        ? HTMLTextAreaElement.prototype
-                        : HTMLInputElement.prototype;
-                    const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
-                    setter.call(inp, args.val);
-                    inp.dispatchEvent(new Event('input', {bubbles: true}));
-                    inp.dispatchEvent(new Event('change', {bubbles: true}));
-                }
-            """, {"idx": cell_idx, "val": value})
+            pass
+        # 验证 fill 是否生效
+        try:
+            current_val = inp.input_value(timeout=1000) if inp.locator('input').count() == 0 else inp.evaluate('el => el.value')
+            if current_val == value:
+                self.page.wait_for_timeout(300)
+                return
+        except Exception:
+            pass
+        # JS 兜底：使用 page.evaluate 参数传递，避免特殊字符破坏 JS 语法
+        self.page.evaluate("""
+            (args) => {
+                const cells = document.querySelectorAll('.van-cell');
+                const cell = cells[args.idx];
+                if (!cell) return;
+                const inp = cell.querySelector('input, textarea');
+                if (!inp) return;
+                const proto = inp instanceof HTMLTextAreaElement
+                    ? HTMLTextAreaElement.prototype
+                    : HTMLInputElement.prototype;
+                const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+                setter.call(inp, args.val);
+                inp.dispatchEvent(new Event('input', {bubbles: true}));
+                inp.dispatchEvent(new Event('change', {bubbles: true}));
+            }
+        """, {"idx": cell_idx, "val": value})
         self.page.wait_for_timeout(300)
 
     def _click_picker_by_index(self, cell_idx: int, option_text: str):
         """兼容 van-picker / van-action-sheet 两种弹层，使用 BasePage 通用方法。"""
-        self.page.evaluate("""() => {
-            document.querySelectorAll('.van-popup').forEach(p => {
-                if (p.querySelector('.van-picker') || p.querySelector('.van-action-sheet')) {
-                    p.style.display = 'none';
-                }
-            });
-            document.querySelectorAll('.van-overlay').forEach(o => o.style.display = 'none');
-        }""")
-        self.page.wait_for_timeout(300)
-        self.page.locator('.van-cell').nth(cell_idx).click()
+        # 只关闭非当前目标的 picker popup（用 Vue 兼容方式，绝不 display:none）
+        existing_picker = self.page.locator('.van-popup:visible .van-picker').count()
+        if existing_picker > 0:
+            # 检查已打开的 picker 是否不是我们想要的选项
+            current_picker_text = self.page.evaluate("""() => {
+                const items = document.querySelectorAll('.van-popup .van-picker-column__item');
+                return Array.from(items).filter(el => el.offsetParent !== null).map(el => el.textContent.trim()).join(',');
+            }""")
+            if option_text not in current_picker_text:
+                # Vue 兼容方式关闭残留的 picker
+                self._close_popup_vue_safe()
+                self.page.wait_for_timeout(300)
+
+        # 确保目标 cell 可见并可交互
+        cell = self.page.locator('.van-cell').nth(cell_idx)
+        cell.scroll_into_view_if_needed()
+        self.page.wait_for_timeout(200)
+
+        # 如果目标 picker 已经打开（包含目标选项），直接选择
+        existing_picker2 = self.page.locator('.van-popup:visible .van-picker').count()
+        if existing_picker2 > 0:
+            current_picker_text2 = self.page.evaluate("""() => {
+                const items = document.querySelectorAll('.van-popup .van-picker-column__item');
+                return Array.from(items).filter(el => el.offsetParent !== null).map(el => el.textContent.trim()).join(',');
+            }""")
+            if option_text in current_picker_text2:
+                self.select_picker_option(option_text)
+                self.page.wait_for_timeout(300)
+                self.confirm_picker()
+                self.page.wait_for_timeout(500)
+                return
+
+        cell.click()
         self.page.wait_for_timeout(1000)
-        self.wait_for_picker_popup(timeout=5000)
+        # 断言 picker 弹出了
+        popup_visible = self.wait_for_picker_popup(timeout=5000)
+        if not popup_visible:
+            # 诊断信息
+            cell_text = cell.inner_text(timeout=3000)
+            overlay_count = self.page.locator('.van-overlay:visible').count()
+            popup_count = self.page.locator('.van-popup:visible').count()
+            raise RuntimeError(
+                f"Picker 弹窗未出现！cell[{cell_idx}]='{cell_text}', "
+                f"overlay_count={overlay_count}, popup_count={popup_count}"
+            )
         self.select_picker_option(option_text)
         self.page.wait_for_timeout(300)
         self.confirm_picker()
@@ -160,7 +204,11 @@ class JdyFillPage(BasePage):
     def fill_contact1(self, name: str, relation: str, phone: str, id_no: str = ""):
         # 联系人1的字段用 occurrence=0（第一个"姓名"、"关系"、"手机号"、"身份证号"）
         self._fill_by_label("姓名", name, occurrence=0)
-        self._click_picker_by_label("关系", relation, occurrence=0)
+        # 离异/丧偶时，联系人1关系被自动设为"父母"且 disabled，不可选择
+        if self.is_contact1_relation_disabled():
+            allure.attach("联系人1关系字段 disabled（离异/丧偶），跳过选择", name="联系人1关系跳过")
+        else:
+            self._click_picker_by_label("关系", relation, occurrence=0)
         self._fill_by_label("手机号", phone, occurrence=0)
         if id_no:
             self._fill_by_label("身份证号", id_no, occurrence=0)
@@ -174,14 +222,8 @@ class JdyFillPage(BasePage):
 
     @allure.step("点击完成补充")
     def click_submit(self):
-        # 先关闭可能残留的 picker 弹窗
-        self.page.evaluate("""() => {
-            document.querySelectorAll('.van-popup').forEach(p => {
-                if (p.querySelector('.van-picker')) p.style.display = 'none';
-            });
-            document.querySelectorAll('.van-overlay').forEach(o => o.style.display = 'none');
-        }""")
-        self.page.wait_for_timeout(300)
+        # 先关闭可能残留的 picker 弹窗（Vue 兼容方式，绝不 display:none）
+        self._close_popup_vue_safe()
         # 检查按钮是否被禁用，并收集所有诊断信息
         diag = self.page.evaluate("""() => {
             const result = {btn: {}, errors: [], emptyFields: [], cellValues: []};

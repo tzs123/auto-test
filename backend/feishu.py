@@ -61,13 +61,15 @@ def send_card(task: dict):
     MODULE_MAP = {"api": "接口测试", "ui": "UI测试", "all": "全部测试"}
     module_name = MODULE_MAP.get(task.get("module", ""), task.get("module", ""))
 
+    skip_n = int(task.get("skipped", 0) or 0)
+
     elements = [
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**项目：** {project_name or project_id}　**模块：** {module_name}"}},
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**状态：** {_status_text(status)}　**通过率：** {rate}"}},
         {"tag": "div", "text": {"tag": "lark_md",
-         "content": f"**总计：** {total}　**通过：** {pass_n}　**失败：** {fail_n}"}},
+         "content": f"**总计：** {total}　**通过：** {pass_n}　**失败：** {fail_n}　**跳过：** {skip_n}"}},
         {"tag": "div", "text": {"tag": "lark_md",
          "content": f"**耗时：** {task.get('duration', 0)}s　**触发：** {task.get('triggered_by','manual')}"}},
         {"tag": "div", "text": {"tag": "lark_md",

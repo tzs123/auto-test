@@ -161,14 +161,8 @@ class JdyResultPage(BasePage):
 
     @allure.step("点击同意并申请")
     def click_submit(self):
-        # 先关闭可能残留的 picker 弹窗
-        self.page.evaluate("""() => {
-            document.querySelectorAll('.van-popup').forEach(p => {
-                if (p.querySelector('.van-picker')) p.style.display = 'none';
-            });
-            document.querySelectorAll('.van-overlay').forEach(o => o.style.display = 'none');
-        }""")
-        self.page.wait_for_timeout(300)
+        # 先关闭可能残留的 picker 弹窗（Vue 兼容方式，绝不 display:none）
+        self._close_popup_vue_safe()
         # 用 Playwright click + force=True（与首页一致）
         self.page.locator('button:has-text("同意并申请")').click(force=True)
         self.page.wait_for_timeout(2000)

@@ -64,14 +64,35 @@ class JdyHomePage(BasePage):
         self._tap_element('.car-tooltips-submit')
         self.page.wait_for_timeout(500)
 
-        # 确保遮罩层已关闭
-        self.page.evaluate("""() => {
-            document.querySelectorAll('.van-popup').forEach(p => {
-                if (p.querySelector('.car-keyboard')) p.style.display = 'none';
-            });
-            document.querySelectorAll('.van-overlay').forEach(o => o.style.display = 'none');
-        }""")
-        self.page.wait_for_timeout(300)
+        # Vue 兼容方式关闭键盘弹窗：点击 overlay 触发 Vue 的关闭回调
+        # 绝不使用 style.display='none'（会破坏 Vue 内部状态导致后续组件失效）
+        self._close_car_keyboard_vue_safe()
+
+    def _close_car_keyboard_vue_safe(self):
+        """Vue 兼容方式关闭车牌号键盘弹窗。
+        点击 overlay 触发 Vue 的关闭回调，绝不强制 display:none。"""
+        for _ in range(3):
+            overlay = self.page.locator('.van-overlay:visible')
+            popup = self.page.locator('.van-popup:visible')
+            if overlay.count() == 0 and popup.count() == 0:
+                return
+            # 点击 overlay 触发 Vue close
+            if overlay.count() > 0:
+                try:
+                    overlay.first.click(force=True)
+                    self.page.wait_for_timeout(300)
+                except Exception:
+                    pass
+            # 如果键盘 popup 还在，尝试按提交/取消按钮
+            for sel in ['.car-tooltips-submit', '.van-picker__cancel']:
+                try:
+                    btn = self.page.locator(sel)
+                    if btn.is_visible(timeout=500):
+                        btn.click(force=True)
+                        self.page.wait_for_timeout(300)
+                except Exception:
+                    pass
+            self.page.wait_for_timeout(200)
 
     def _tap_car_key(self, char: str):
         """用touchstart/touchend事件模拟点击虚拟键盘按键（移动端H5绑定的是touch事件）"""

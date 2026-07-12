@@ -615,6 +615,7 @@ def run_task(task_id: str):
     env["TASK_ID"] = task_id  # 供 conftest 截图按任务归档
     env["ENV"] = task.get("env", "test")  # 供 yaml_loader.load_config 选择环境配置
     env["PROJECT_ID"] = task["project_id"]  # 供 conftest/yaml_loader 使用项目级配置
+    env["PYTHONDONTWRITEBYTECODE"] = "1"  # 禁止生成 .pyc 缓存，确保每次执行读取最新代码
     # 设置 BASE_URL 环境变量（执行时指定的 Base URL，覆盖页面对象中的默认值）
     base_url = task.get("base_url") or ""
     if base_url:

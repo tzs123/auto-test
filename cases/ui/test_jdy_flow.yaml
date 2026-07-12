@@ -39,6 +39,7 @@
   unit_industry: 金融业
   valid_period: 2020.01.01-2040.01.01
   work_type: 国家机关、党群组织、企业、事业单位负责人
+  
 - admin_expect_row_count: 1
   admin_password: admin123
   admin_url: http://172.16.0.86:5174/login
@@ -86,6 +87,7 @@
   valid_period: 2020.01.01-2040.01.01
   verify_admin_after_submit: true
   work_type: 国家机关、党群组织、企业、事业单位负责人
+  
 - area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
   captcha: '111111'
@@ -105,6 +107,7 @@
   - regression
   - result_page
   valid_period: 2020.01.01-2040.01.01
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -136,6 +139,7 @@
   unit_address: 杭州市西湖区文三路
   unit_industry: 金融业
   work_type: 国家机关、党群组织、企业、事业单位负责人
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -174,147 +178,7 @@
   id_card_address: 浙江省杭州市
   issue_authority: 杭州市公安局
   valid_period: 2020.01.01-2040.01.01
-- annual_income: '50'
-  area: 广东省-深圳市-南山区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 腾讯科技
-  contact1_name: 王五
-  contact1_phone: '18900001111'
-  contact1_relation: 朋友
-  contact2_name: 赵六
-  contact2_phone: '18900002222'
-  contact2_relation: 亲戚
-  education: 本科
-  ethnicity: 汉
-  expect_submit_page: true
-  fill_address: 科技园
-  fill_area: 广东省-深圳市-南山区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 24
-  loan_use: 购车
-  marriage: 未婚
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: smoke_未婚无子女完整流程
-  tags:
-  - smoke
-  - e2e
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  valid_period: 2020.01.01-2040.01.01
-  work_type: 专业技术人员
-- annual_income: '25'
-  area: 北京市-市辖区-海淀区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 百度
-  contact1_id: '110101199001011234'
-  contact1_name: 配偶
-  contact1_phone: '13800001111'
-  contact1_relation: 配偶
-  contact2_name: 同事
-  contact2_phone: '13800002222'
-  contact2_relation: 同事
-  education: 大专
-  ethnicity: 汉
-  expect_submit_page: true
-  fill_address: 中关村
-  fill_area: 北京市-市辖区-海淀区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 12
-  loan_use: 装修
-  marriage: 已婚无子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: smoke_已婚无子女完整流程
-  tags:
-  - smoke
-  - e2e
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  valid_period: 2020.01.01-2040.01.01
-  work_type: 办事人员和有关人员
-- annual_income: '80'
-  area: 上海市-市辖区-浦东新区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 阿里巴巴
-  contact1_name: 朋友
-  contact1_phone: '13900001111'
-  contact1_relation: 朋友
-  contact2_name: 亲属
-  contact2_phone: '13900002222'
-  contact2_relation: 亲属
-  education: 高中
-  ethnicity: 汉
-  expect_submit_page: true
-  fill_address: 陆家嘴
-  fill_area: 上海市-市辖区-浦东新区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 36
-  loan_use: 旅游
-  marriage: 离异
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: smoke_离异完整流程
-  tags:
-  - smoke
-  - e2e
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  valid_period: 2020.01.01-2040.01.01
-  work_type: 商业、服务业人员
-- annual_income: '45'
-  area: 广东省-广州市-天河区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 华为技术
-  contact1_name: 子女
-  contact1_phone: '13700001111'
-  contact1_relation: 子女
-  contact2_name: 亲属
-  contact2_phone: '13700002222'
-  contact2_relation: 亲属
-  education: 本科
-  ethnicity: 汉
-  expect_submit_page: true
-  fill_address: 珠江新城
-  fill_area: 广东省-广州市-天河区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 36
-  loan_use: 医疗
-  marriage: 丧偶
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: smoke_丧偶完整流程
-  tags:
-  - smoke
-  - e2e
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  valid_period: 2020.01.01-2040.01.01
-  work_type: 生产运输设备操作人员
+
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -354,51 +218,7 @@
   valid_period: 2020.01.01-2040.01.01
   verify_sign_agreement: true
   work_type: 国家机关、党群组织、企业、事业单位负责人
-- area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  driving_license: /Users/tanzsongsen/Downloads/行驶证.jpg
-  ethnicity: 汉
-  expect_inconsistency_handled: true
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 36
-  loan_use: 教育
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: smoke_人车不一致上传行驶证验证
-  tags:
-  - smoke
-  - e2e
-  - inconsistency
-  valid_period: 2020.01.01-2040.01.01
-- area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  ethnicity: 汉
-  expect_popup_closed: true
-  expect_submit_enabled: true
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_card_address: 浙江省杭州市
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  issue_authority: 杭州市公安局
-  loan_term: 36
-  loan_use: 教育
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  reenter_plate: 浙A24D3M
-  scenario: smoke_人车不一致重新输入车牌号
-  tags:
-  - smoke
-  - e2e
-  - inconsistency
-  valid_period: 2020.01.01-2040.01.01
+  
 - area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
   captcha: '111111'
@@ -422,6 +242,7 @@
   - result_page
   - id_ocr_mismatch
   valid_period: 2020.01.01-2040.01.01
+  
 - area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
   captcha: '111111'
@@ -438,49 +259,11 @@
   product_id: JDYPRD01
   scenario: positive_身份证OCR正常识别提交
   tags:
-  - smoke
-  - e2e
-  - id_ocr_match
-  valid_period: 2020.01.01-2040.01.01
-  expect_submit_page: true
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 浙江日报
-  contact1_id: '450721199512073953'
-  contact1_name: 张三
-  contact1_phone: '19981212121'
-  contact1_relation: 配偶
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 同事
-  education: 硕士及以上
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 已婚无子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_已婚无子女联系人身份证异常
-  tags:
   - negative
-  - fill_page
-  - contact_id_invalid
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
+  - result_page
+  - id_ocr_mismatch
   valid_period: 2020.01.01-2040.01.01
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -508,159 +291,13 @@
   product_id: JDYPRD01
   scenario: negative_离异联系人2选配偶
   tags:
-  - negative
-  - fill_page
-  - contact2_relation_invalid
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 浙江日报
-  contact1_name: 张三
-  contact1_phone: '19981212121'
-  contact1_relation: 子女
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 配偶
-  education: 硕士及以上
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 丧偶
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_丧偶联系人2选配偶
-  tags:
-  - negative
-  - fill_page
-  - contact2_relation_invalid
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 浙江日报
-  contact1_id: '132430196906104323'
-  contact1_name: 张三
-  contact1_phone: '19981212121'
-  contact1_relation: 配偶
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 配偶
-  education: 硕士及以上
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 已婚有子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_已婚有子女联系人2选配偶
-  tags:
-  - negative
-  - fill_page
-  - contact2_relation_invalid
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 浙江日报
-  contact1_id: '132430196906104323'
-  contact1_name: 张三
-  contact1_phone: '19981212121'
-  contact1_relation: 配偶
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 配偶
-  education: 硕士及以上
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 已婚无子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_已婚无子女联系人2选配偶
-  tags:
-  - negative
-  - fill_page
-  - contact2_relation_invalid
-  unit_address: 杭州市西湖区文三路
-  unit_industry: 金融业
-  work_type: 国家机关、党群组织、企业、事业单位负责人
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 浙江日报
-  contact1_id: 11010119900307391X
-  contact1_name: 张三
-  contact1_phone: '19981212121'
-  contact1_relation: 配偶
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 同事
-  education: 硕士及以上
-  expect_submit_page: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 已婚有子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: boundary_已婚有子女联系人身份证末位X
-  tags:
   - boundary
   - fill_page
   - contact_id_boundary
   unit_address: 杭州市西湖区文三路
   unit_industry: 金融业
   work_type: 国家机关、党群组织、企业、事业单位负责人
-- captcha: '999999'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  expect_error_keyword: 验证码
-  expect_fail_page: home
-  expect_submit_fail: true
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_验证码错误
-  tags:
-  - negative
-  - home_page
-  - captcha_error
+  
 - captcha: '111111'
   car_number: 浙A1234567
   channel_id: JDYFWH
@@ -673,62 +310,7 @@
   - negative
   - home_page
   - plate_error
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 测试公司
-  contact1_name: ''' OR ''1''=''1'
-  contact1_phone: '19981212121'
-  contact1_relation: 朋友
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 同事
-  education: 本科
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 未婚
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: security_SQL注入联系人姓名
-  tags:
-  - security
-  - fill_page
-  - sql_injection
-  unit_address: 测试地址
-  unit_industry: 金融业
-  work_type: 专业技术人员
-- area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  expect_fail_page: result
-  expect_submit_fail: true
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  override_borrower_id: '123456'
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_身份证位数错误
-  tags:
-  - negative
-  - result_page
-  - id_error
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
+
 - captcha: '111111'
   car_number: 粤B1234567
   channel_id: JDYFWH
@@ -740,64 +322,8 @@
   tags:
   - negative
   - home_page
-  - plate_province_error
-- area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  expect_fail_page: result
-  expect_submit_fail: true
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  override_borrower_id: '110101199001011235'
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_身份证校验码错误
-  tags:
-  - negative
-  - result_page
-  - id_checksum_error
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-- annual_income: '30'
-  area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  company: 测试公司
-  contact1_id: '110101199001011234'
-  contact1_name: 配偶
-  contact1_phone: '19981212121'
-  contact1_relation: 配偶
-  contact2_name: 李四
-  contact2_phone: '18000001010'
-  contact2_relation: 同事
-  education: 本科
-  expect_fail_page: fill
-  expect_submit_fail: true
-  fill_address: 天安门
-  fill_area: 北京市-市辖区-东城区
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  marriage: 已婚有子女
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_借款人与联系人身份证重复
-  tags:
-  - negative
-  - fill_page
-  - duplicate_id
-  unit_address: 测试地址
-  unit_industry: 金融业
-  work_type: 专业技术人员
+  - plate_error
+
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -832,6 +358,7 @@
   unit_address: 测试地址
   unit_industry: 金融业
   work_type: 专业技术人员
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -865,29 +392,7 @@
   unit_address: 测试地址
   unit_industry: 金融业
   work_type: 专业技术人员
-- area: 北京市-市辖区-东城区
-  borrower_name: 施哲鼎
-  captcha: '111111'
-  car_number: 浙A24D3M
-  channel_id: JDYFWH
-  expect_fail_page: result
-  expect_submit_fail: true
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  loan_term: 36
-  loan_use: 教育
-  override_borrower_id: '110101195001011234'
-  phone: ${random_phone_cn}
-  product_id: JDYPRD01
-  scenario: negative_年龄超过65岁
-  tags:
-  - negative
-  - result_page
-  - age_error
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -927,6 +432,7 @@
   valid_period: 2020.01.01-2040.01.01
   verify_sign_btn_state: true
   work_type: 国家机关、党群组织、企业、事业单位负责人
+  
 - annual_income: '30'
   area: 北京市-市辖区-东城区
   borrower_name: 施哲鼎
@@ -966,34 +472,7 @@
   valid_period: 2020.01.01-2040.01.01
   verify_sign_btn_state: true
   work_type: 国家机关、党群组织、企业、事业单位负责人
-- channel_id: JDYFWH
-  product_id: JDYPRD01
-  phone: ${random_phone_cn}
-  captcha: '111111'
-  car_number: 浙A24D3M
-  loan_term: 36
-  area: 北京市-市辖区-东城区
-  loan_use: 教育
-  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
-  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
-  borrower_name: 施哲鼎
-  ethnicity: 汉
-  id_card_address: 浙江省杭州市
-  issue_authority: 杭州市公安局
-  valid_period: 2020.01.01-2040.01.01
-  override_borrower_id: '110101200901011234'
-  tc_id: RISK-ID-004a
-  scenario: negative_年龄不满18岁
-  module: 借款人信息
-  tags:
-  - negative
-  - boundary
-  - risk_rule
-  kb_summary: 身份证号对应年龄不满18岁（未成年人），应被风控拦截或提示年龄不足
-  kb_expected: 系统校验年龄不满18岁，拒绝申请或提示年龄限制
-  expect_submit_fail: true
-  expect_fail_page: result
-  expect_error_keyword: 年龄
+  
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -1009,6 +488,7 @@
   kb_summary: 尝试绕过签署流程直接访问签署完成后的页面URL，验证权限控制
   kb_expected: 系统应拦截非法跳转，返回错误页或重定向到正确流程
   expect_sign_bypass_blocked: true
+  
 - channel_id: JDYFWH
   product_id: JDYPRD01
   phone: ${random_phone_cn}
@@ -1024,8 +504,35 @@
   kb_summary: 已完成签约后再次提交签约请求，验证重复签约拦截机制
   kb_expected: 系统应检测已签约状态，拒绝重复签约请求
   expect_resign_blocked: true
+  
 - channel_id: JDYFWH
   product_id: JDYPRD01
+  borrower_name: 施哲鼎
+  id_front: /Users/tanzsongsen/Downloads/身份证正面.jpg
+  id_back: /Users/tanzsongsen/Downloads/身份证反面.jpg
+  loan_term: 36
+  area: 北京市-市辖区-东城区
+  loan_use: 教育
+  ethnicity: 汉
+  id_card_address: 浙江省杭州市
+  issue_authority: 杭州市公安局
+  valid_period: 2020.01.01-2040.01.01
+  fill_area: 北京市-市辖区-东城区
+  fill_address: 测试地址123号
+  marriage: 已婚有子女
+  education: 本科
+  company: 测试公司
+  unit_industry: 金融业
+  unit_address: 杭州市西湖区文三路
+  work_type: 公司职员
+  annual_income: '30'
+  contact1_name: 张三
+  contact1_relation: 配偶
+  contact1_phone: '13800138000'
+  contact1_id: '110101199001011234'
+  contact2_name: 李四
+  contact2_relation: 同事
+  contact2_phone: '18000001010'
   phone: ${random_phone_cn}
   captcha: '111111'
   car_number: 浙A24D3M

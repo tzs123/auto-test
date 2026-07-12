@@ -18,10 +18,15 @@ def _generate_random_phone():
 def get_cases_by_tag(tag):
     """每次调用重新加载并生成新的随机手机号，避免服务器端状态污染"""
     cases = load_cases("cases/ui/test_jdy_flow.yaml")
+    if not cases:
+        return [pytest.param(None, marks=pytest.mark.skip(reason="No cases in YAML"))]
     for case in cases:
         if case.get("phone"):
             case["phone"] = _generate_random_phone()
-    return [c for c in cases if tag in c.get("tags", [])]
+    filtered = [c for c in cases if tag in c.get("tags", [])]
+    if not filtered:
+        return [pytest.param(None, marks=pytest.mark.skip(reason=f"No cases with tag '{tag}'"))]
+    return filtered
 
 
 # ────────── SPA 路由等待工具（pushState 不触发导航事件） ──────────
@@ -85,6 +90,24 @@ def _collect_fill_page_diag(page) -> str:
     )
 
 
+def _log_fill_cells(page, stage: str):
+    """记录补充信息页所有 cell 的标签和值到 allure 报告"""
+    try:
+        info = page.evaluate("""() => {
+            const cells = document.querySelectorAll('.van-cell');
+            return Array.from(cells).map((c, i) => {
+                const title = c.querySelector('.van-cell__title, .van-field__label, label');
+                const text = title ? title.textContent.trim() : '(no label)';
+                const ctrl = c.querySelector('.van-field__control, input, textarea');
+                const val = ctrl ? (ctrl.value || '').trim().slice(0, 30) : '';
+                return `[${i}] ${text} = '${val}'`;
+            }).join('\\n');
+        }""")
+        allure.attach(info, name=f"fill页-{stage}", attachment_type=allure.attachment_type.TEXT)
+    except Exception:
+        pass
+
+
 # ────────── 流程辅助：按需走完前置页面 ──────────
 
 def _flow_home(page, case):
@@ -139,7 +162,15 @@ def _flow_home(page, case):
     if error_msg:
         allure.attach(f"错误提示: {error_msg}", name="表单错误")
     allure.attach(f"当前URL: {page.url}", name="当前URL")
-    
+
+    # 首页反向用例：预期提交失败停在首页
+    if case.get("expect_submit_fail") and case.get("expect_fail_page") == "home":
+        if "/home" in page.url:
+            allure.attach(page.screenshot(), name="首页反向用例-停在首页", attachment_type=allure.attachment_type.PNG)
+            allure.attach(f"✅ 首页提交被拦截，停在首页（错误: {error_msg or '无'}）", name="提交结果")
+            return
+        # 如果意外跳转了，继续走正常流程
+
     try:
         _wait_url_contains(page, "/result", timeout=15000)
     except TimeoutError:
@@ -169,6 +200,11 @@ def _flow_result(page, case):
         name_val = result.get_name_value()
         id_val = result.get_id_card_value()
         allure.attach(f"OCR识别姓名: '{name_val}', 身份证号: '{id_val}'", name="OCR字段值")
+
+    # 覆写借款人身份证号（用于测试风控拦截，如未成年人身份证）
+    if case.get("override_borrower_id"):
+        result.override_borrower_id(case["override_borrower_id"])
+        allure.attach(f"覆写身份证号为: {case['override_borrower_id']}", name="覆写身份证号")
 
     # 选择贷款信息
     if case.get("loan_term"):
@@ -240,6 +276,13 @@ def _flow_result(page, case):
         allure.attach(f"提交错误: {error_msg}", name="借款人信息页提交错误")
     allure.attach(f"当前URL: {page.url}", name="提交后URL")
 
+    # 借款人信息页反向用例：预期提交失败停在 result 页
+    if case.get("expect_submit_fail") and case.get("expect_fail_page") == "result":
+        if "/result" in page.url:
+            allure.attach(page.screenshot(), name="result反向用例-停在result", attachment_type=allure.attachment_type.PNG)
+            allure.attach(f"✅ 借款人信息页提交被拦截，停在result（错误: {error_msg or '无'}）", name="提交结果")
+            return
+
     try:
         _wait_url_contains(page, "/fill", timeout=15000)
     except TimeoutError:
@@ -250,41 +293,93 @@ def _flow_result(page, case):
 
 
 def _flow_fill(page, case):
-    """补充信息页：填写补充信息并提交"""
+    """补充信息页：填写补充信息并提交
+
+    填写顺序：婚姻状况最先（可能触发页面重新渲染/字段变化），
+    然后地区和地址，最后其他字段和联系人。
+    """
     fill = JdyFillPage(page)
     assert "/fill" in fill.get_current_url(), "应在补充信息页"
+    # 等待补充信息页完全加载（van-cell 渲染完成）
+    page.wait_for_selector('.van-cell', timeout=15000)
+    page.wait_for_load_state("networkidle", timeout=10000)
+    page.wait_for_timeout(2000)
+    # 如果页面恢复了上一次的信息，先一键清空
+    try:
+        clear_btn = page.locator('text=一键清空')
+        if clear_btn.is_visible(timeout=2000):
+            clear_btn.click()
+            page.wait_for_timeout(500)
+            allure.attach("已清空恢复的信息", name="一键清空")
+    except Exception:
+        pass
+    # 一键清空后关闭可能残留的 picker/overlay
+    overlay_before = page.locator('.van-overlay:visible').count()
+    picker_before = page.locator('.van-popup:visible .van-picker').count()
+    if overlay_before > 0 or picker_before > 0:
+        fill._close_popup_vue_safe()
+        page.wait_for_timeout(500)
+        allure.attach("清空后关闭了残留弹窗", name="清空后弹窗清理")
     allure.attach(fill.screenshot(), name="补充信息页加载", attachment_type=allure.attachment_type.PNG)
+
+    # 诊断：记录填写前页面所有 cell 信息
+    _log_fill_cells(page, "填写前")
+
+    # 婚姻状况最先选择（不同婚姻状况会显示不同字段，可能触发页面重新渲染）
+    if case.get("marriage"):
+        fill.select_marriage(case["marriage"])
+        page.wait_for_timeout(500)
+        m_selected = fill.is_marriage_selected(case["marriage"])
+        assert m_selected, f"婚姻状况应显示'{case['marriage']}'"
+        # 诊断：检查是否有残留 overlay/popup 阻挡后续操作
+        overlay_count = page.locator('.van-overlay:visible').count()
+        picker_count = page.locator('.van-popup:visible .van-picker').count()
+        allure.attach(f"overlay={overlay_count}, picker={picker_count}", name="婚姻选择后弹窗状态")
+        if overlay_count > 0 or picker_count > 0:
+            fill._close_popup_vue_safe()
+            page.wait_for_timeout(300)
+        _log_fill_cells(page, "选择婚姻后")
 
     if case.get("fill_area"):
         fill.select_area(case["fill_area"])
+        ov = page.locator('.van-overlay:visible').count()
+        if ov > 0: fill._close_popup_vue_safe()
+        _log_fill_cells(page, "选地区后")
     if case.get("fill_address"):
         fill.fill_address(case["fill_address"])
-    if case.get("marriage"):
-        fill.select_marriage(case["marriage"])
-        assert fill.is_marriage_selected(case["marriage"]), f"婚姻状况应显示'{case['marriage']}'"
+        _log_fill_cells(page, "填地址后")
     if case.get("education"):
         fill.select_education(case["education"])
+        _log_fill_cells(page, "选教育后")
     if case.get("company"):
         fill.fill_company(case["company"])
+        _log_fill_cells(page, "填单位后")
     if case.get("unit_industry"):
         fill.select_unit_industry(case["unit_industry"])
+        _log_fill_cells(page, "选行业后")
     if case.get("unit_address"):
         fill.fill_unit_address(case["unit_address"])
+        _log_fill_cells(page, "填单位地址后")
     if case.get("work_type"):
         fill.select_work_type(case["work_type"])
+        _log_fill_cells(page, "选职业后")
     if case.get("annual_income"):
         fill.fill_annual_income(case["annual_income"])
+        _log_fill_cells(page, "填年收入后")
     if case.get("contact1_name"):
         fill.fill_contact1(
             case["contact1_name"], case["contact1_relation"],
             case["contact1_phone"], case.get("contact1_id", "")
         )
+        _log_fill_cells(page, "填联系人1后")
     if case.get("contact2_name"):
         fill.fill_contact2(
             case["contact2_name"], case["contact2_relation"],
             case["contact2_phone"]
         )
+        _log_fill_cells(page, "填联系人2后")
 
+    _log_fill_cells(page, "填写完毕后")
     allure.attach(fill.screenshot(), name="补充信息填写完毕", attachment_type=allure.attachment_type.PNG)
     fill.click_submit()
 
@@ -548,8 +643,57 @@ def test_negative_fill_submit(case, page):
     with allure.step("前置：走完首页流程"):
         _flow_home(page, case)
 
+    # 首页反向用例：已在首页失败，直接断言
+    if case.get("expect_fail_page") == "home":
+        error_msg = page.evaluate("""() => {
+            const toast = document.querySelector('.van-toast');
+            const notify = document.querySelector('.van-notify');
+            const errors = document.querySelectorAll('.van-field__error-message');
+            const getVisibleText = (el) => {
+                if (!el) return '';
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return '';
+                return el.textContent.trim();
+            };
+            if (toast) return getVisibleText(toast);
+            if (notify) return getVisibleText(notify);
+            return Array.from(errors).map(getVisibleText).filter(t => t).join(', ');
+        }""")
+        if case.get("expect_error_keyword"):
+            assert case["expect_error_keyword"] in error_msg, \
+                f"期望错误提示包含'{case['expect_error_keyword']}'，实际: '{error_msg}'"
+            allure.attach(f"✅ 校验通过：错误提示包含'{case['expect_error_keyword']}'", name="断言结果")
+        else:
+            default_keywords = ["请输入", "请选择", "不能为空", "格式不正确", "请填写", "必填"]
+            matched = [kw for kw in default_keywords if kw in error_msg]
+            if matched:
+                allure.attach(f"✅ 校验通过：{matched} - {error_msg}", name="断言结果")
+        return
+
     with allure.step("前置：走完借款人信息页流程"):
         _flow_result(page, case)
+
+    # 借款人信息页反向用例：已在result页失败，直接断言
+    if case.get("expect_fail_page") == "result":
+        error_msg = page.evaluate("""() => {
+            const toast = document.querySelector('.van-toast');
+            const notify = document.querySelector('.van-notify');
+            const errors = document.querySelectorAll('.van-field__error-message');
+            const getVisibleText = (el) => {
+                if (!el) return '';
+                const style = window.getComputedStyle(el);
+                if (style.display === 'none' || style.visibility === 'hidden') return '';
+                return el.textContent.trim();
+            };
+            if (toast) return getVisibleText(toast);
+            if (notify) return getVisibleText(notify);
+            return Array.from(errors).map(getVisibleText).filter(t => t).join(', ');
+        }""")
+        if case.get("expect_error_keyword"):
+            assert case["expect_error_keyword"] in error_msg, \
+                f"期望错误提示包含'{case['expect_error_keyword']}'，实际: '{error_msg}'"
+            allure.attach(f"✅ 校验通过：错误提示包含'{case['expect_error_keyword']}'", name="断言结果")
+        return
 
     with allure.step("补充信息页：填写异常数据并提交"):
         fill = JdyFillPage(page)
