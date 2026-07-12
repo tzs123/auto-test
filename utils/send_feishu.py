@@ -27,24 +27,23 @@ def main():
         )
 
 
-    status = str(
-        data.get("status", "")
+    failed = int(
+        data.get("failed", 0)
     )
 
 
-    if (
-        "success" in status.lower()
-        or "passed" in status.lower()
-        or "通过" in status
-    ):
+    # 测试状态颜色
+    if failed == 0:
 
         template = "green"
-        title = "✅ 自动化测试通过"
+
+        title = "🚀 自动化测试完成"
 
     else:
 
         template = "red"
-        title = "❌ 自动化测试失败"
+
+        title = "🚨 自动化测试完成"
 
 
 
@@ -56,7 +55,9 @@ def main():
 
 
             "config": {
+
                 "wide_screen_mode": True
+
             },
 
 
@@ -79,92 +80,8 @@ def main():
 
 
                 # ======================
-                # 第一排：核心指标
+                # 项目 + 状态
                 # ======================
-
-                {
-
-                    "tag": "div",
-
-                    "fields": [
-
-                        {
-
-                            "is_short": True,
-
-                            "text": {
-
-                                "tag": "lark_md",
-
-                                "content":
-                                    f"**📋 总用例**\n{data['total']}"
-
-                            }
-
-                        },
-
-
-                        {
-
-                            "is_short": True,
-
-                            "text": {
-
-                                "tag": "lark_md",
-
-                                "content":
-                                    f"**✅ 通过**\n{data['passed']}"
-
-                            }
-
-                        },
-
-
-                        {
-
-                            "is_short": True,
-
-                            "text": {
-
-                                "tag": "lark_md",
-
-                                "content":
-                                    f"**❌ 失败**\n{data['failed']}"
-
-                            }
-
-                        },
-
-
-                        {
-
-                            "is_short": True,
-
-                            "text": {
-
-                                "tag": "lark_md",
-
-                                "content":
-                                    f"**📈 通过率**\n{data['rate']}"
-
-                            }
-
-                        }
-
-                    ]
-
-                },
-
-
-                {
-                    "tag": "hr"
-                },
-
-
-                # ======================
-                # 第二部分：执行信息
-                # ======================
-
 
                 {
 
@@ -175,28 +92,9 @@ def main():
                         "tag": "lark_md",
 
                         "content": f"""
-**项目**
-{data['project']}
+**项目：** {data['project']}
 
-
-**状态**
-{data['status']}
-
-
-**跳过**
-{data['skipped']}
-
-
-**执行耗时**
-{data['duration']}
-
-
-**开始时间**
-{data['start_time']}
-
-
-**结束时间**
-{data['end_time']}
+**状态：** {data['status']}
 """
 
                     }
@@ -204,10 +102,96 @@ def main():
                 },
 
 
+                # ======================
+                # 核心数据横排
+                # ======================
+
                 {
-                    "tag": "hr"
+
+                    "tag": "div",
+
+                    "fields": [
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                f"**总计**\n{data['total']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                f"**通过**\n{data['passed']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                f"**失败**\n{data['failed']}"
+
+                            }
+
+                        },
+
+
+                        {
+
+                            "is_short": True,
+
+                            "text": {
+
+                                "tag": "lark_md",
+
+                                "content":
+                                f"**通过率**\n{data['rate']}"
+
+                            }
+
+                        }
+
+
+                    ]
+
                 },
 
+
+                {
+
+                    "tag": "hr"
+
+                },
+
+
+                # ======================
+                # 执行信息
+                # ======================
 
                 {
 
@@ -217,10 +201,52 @@ def main():
 
                         "tag": "lark_md",
 
-                        "content":
-                            "🤖 GitHub Actions 自动生成测试报告"
+                        "content": f"""
+⏱ **耗时：** {data['duration']}
+
+
+🕒 **执行时间：**
+
+{data['start_time']} ~ {data['end_time']}
+"""
 
                     }
+
+                },
+
+
+                # ======================
+                # Allure按钮
+                # ======================
+
+                {
+
+                    "tag": "action",
+
+                    "actions": [
+
+                        {
+
+                            "tag": "button",
+
+                            "text": {
+
+                                "tag": "plain_text",
+
+                                "content":
+                                "📊 查看 Allure 报告"
+
+                            },
+
+                            "type":
+                            "primary",
+
+                            "url":
+                            "https://tzs123.github.io/auto-test/"
+
+                        }
+
+                    ]
 
                 }
 
