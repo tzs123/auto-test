@@ -1,0 +1,1 @@
+GET http://172.16.0.88:9527/jdy/apply/api/v1/query/dictData/industry

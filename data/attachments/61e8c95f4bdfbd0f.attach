@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843182727,"data":{"code":"JDYPRD01","name":"新中邮车速贷(车主专享)","enableStatus":1,"description":"本次贷款资金由中邮消金、长银消金、小米消金提供","accessRequirements":"用户准入规则说明","iconFileId":0,"iconFileUrl":"https://www.keedongdigit.com/static/jdcr.png","productId":"773213208704978946","rateUpperLimit":24.00,"rateLowerLimit":16.00,"loanTermOptions":"12,24,36","minSingleLoanAmount":1.00,"maxSingleLoanAmount":500000.00,"allowEarlyRepayment":true,"allowPartialEarlyRepayment":true,"default":true}}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】={'code': 'JDYPRD01', 'name': '新中邮车速贷(车主专享)', 'enableStatus': 1, 'description': '本次贷款资金由中邮消金、长银消金、小米消金提供', 'accessRequirements': '用户准入规则说明', 'iconFileId': 0, 'iconFileUrl': 'https://www.keedongdigit.com/static/jdcr.png', 'productId': '773213208704978946', 'rateUpperLimit': 24.0, 'rateLowerLimit': 16.0, 'loanTermOptions': '12,24,36', 'minSingleLoanAmount': 1.0, 'maxSingleLoanAmount': 500000.0, 'allowEarlyRepayment': True, 'allowPartialEarlyRepayment': True, 'default': True}

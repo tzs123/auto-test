@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843184705,"data":{"monthlySupply":0.04}}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】={'monthlySupply': 0.04}

@@ -1,0 +1,5 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"400","msg":"手机号格式不正确","success":false,"timestamp":1783843184016,"data":null}
+【业务码 code】=400
+【业务成功 success】=False
+【业务消息 msg】=手机号格式不正确

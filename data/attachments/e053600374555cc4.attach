@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843181954,"data":[{"label":"国家机关、党群组织、企业、事业单位负责人","value":"0","disabled":null},{"label":"专业技术人员","value":"1","disabled":null},{"label":"商业、服务业人员","value":"2","disabled":null},{"label":"农、林、牧、渔、水利业生产人员","value":"3","disabled":null},{"label":"军人","value":"4","disabled":null},{"label":"医务人员","value":"5","disabled":null},{"label":"教育工作者","value":"6","disabled":null},{"label":"行政机关、事业单位人员","value":"7","disabled":null},{"label":"生产制造业人员","value":"8","disabled":null},{"label":"金融从业人员","value":"9","disabled":null},{"label":"个体户","value":"10","disabled":null}]}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】=[{'label': '国家机关、党群组织、企业、事业单位负责人', 'value': '0', 'disabled': None}, {'label': '专业技术人员', 'value': '1', 'disabled': None}, {'label': '商业、服务业人员', 'value': '2', 'disabled': None}, {'label': '农、林、牧、渔、水利业生产人员', 'value': '3', 'disabled': None}, {'label': '军人', 'value': '4', 'disabled': None}, {'label': '医务人员', 'value': '5', 'disabled': None}, {'label': '教育工作者', 'value': '6', 'disabled': None}, {'label': '行政机关、事业单位人员', 'value': '7', 'disabled': None}, {'label': '生产制造业人员', 'value': '8', 'disabled': None}

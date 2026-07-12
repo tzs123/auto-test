@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843182497,"data":{"id":"865634550103938856","createUserString":null,"createTime":"2026-07-09 16:42:39","preEvaluateAmt":"50490","area":"北京市-市辖区-东城区","address":"k3UBnu4yg8/4jQx0j095SxNqpKXNRge5RvA/DufP9QSBwnI+SX+d3uZxa4qXOgXqFc14/yqUDLxz0SvsBW90LA==","marriage":"未婚","education":"硕士及以上","companyName":"4124","workType":"国家机关、党群组织、企业、事业单位负责人","yearPackage":"41","funderType":"TLCY","funderSupplySubmitInfo":{"customerRelativeInfos":[{"index":1,"name":"张三","relationship":"父母","mobile":"16634543535","idNo":""},{"index":2,"name":"李四","relationship":"同事","mobile":"18857567575","idNo":""}],"industry":"房地产业","companyAddress":"1241","ocrBankCard":null,"signOrderId":null,"signUrl":null},"historyApplyId":null}}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】={'id': '865634550103938856', 'createUserString': None, 'createTime': '2026-07-09 16:42:39', 'preEvaluateAmt': '50490', 'area': '北京市-市辖区-东城区', 'address': 'k3UBnu4yg8/4jQx0j095SxNqpKXNRge5RvA/DufP9QSBwnI+SX+d3uZxa4qXOgXqFc14/yqUDLxz0SvsBW90LA==', 'marriage': '未婚', 'education': '硕士及以上', 'companyName': '4124', 'workType': '国家机关、党群组织、企业、事业单位负责人', 'yearPackage': '41', 'funderType': 'TLCY', 'funderSupplySubmitInfo': {'customerRelativeInfos': [{'index': 1, 'name': '张三', 'relationship': '父母', 'mobile': '

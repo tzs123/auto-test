@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843181786,"data":[{"label":"未婚","value":"1","disabled":null,"extra":"primary"},{"label":"已婚有子女","value":"2","disabled":null,"extra":"primary"},{"label":"已婚无子女","value":"3","disabled":null,"extra":"primary"},{"label":"离异","value":"4","disabled":null,"extra":"primary"},{"label":"丧偶","value":"5","disabled":null,"extra":"primary"}]}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】=[{'label': '未婚', 'value': '1', 'disabled': None, 'extra': 'primary'}, {'label': '已婚有子女', 'value': '2', 'disabled': None, 'extra': 'primary'}, {'label': '已婚无子女', 'value': '3', 'disabled': None, 'extra': 'primary'}, {'label': '离异', 'value': '4', 'disabled': None, 'extra': 'primary'}, {'label': '丧偶', 'value': '5', 'disabled': None, 'extra': 'primary'}]

@@ -1,0 +1,5 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"1","msg":"服务器异常，请联系管理员","success":false,"timestamp":1783843183162,"data":null}
+【业务码 code】=1
+【业务成功 success】=False
+【业务消息 msg】=服务器异常，请联系管理员

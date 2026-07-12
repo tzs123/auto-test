@@ -1,0 +1,6 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"0","msg":"操作成功","success":true,"timestamp":1783843182124,"data":[{"label":"同事","value":"COLLEAGUE","disabled":null},{"label":"朋友","value":"FRIEND","disabled":null},{"label":"其他","value":"OTHER","disabled":null},{"label":"父母","value":"PARENT","disabled":null},{"label":"亲属","value":"RELATIBE","disabled":null},{"label":"兄弟姐妹","value":"SIBLING","disabled":null},{"label":"配偶","value":"SPOUSE","disabled":null},{"label":"子女","value":"SUN","disabled":null}]}
+【业务码 code】=0
+【业务成功 success】=True
+【业务消息 msg】=操作成功
+【业务数据 data】=[{'label': '同事', 'value': 'COLLEAGUE', 'disabled': None}, {'label': '朋友', 'value': 'FRIEND', 'disabled': None}, {'label': '其他', 'value': 'OTHER', 'disabled': None}, {'label': '父母', 'value': 'PARENT', 'disabled': None}, {'label': '亲属', 'value': 'RELATIBE', 'disabled': None}, {'label': '兄弟姐妹', 'value': 'SIBLING', 'disabled': None}, {'label': '配偶', 'value': 'SPOUSE', 'disabled': None}, {'label': '子女', 'value': 'SUN', 'disabled': None}]

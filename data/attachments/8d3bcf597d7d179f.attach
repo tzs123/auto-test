@@ -1,0 +1,5 @@
+【HTTP状态码】实际=200
+【响应体】{"code":"500","msg":"无效签名：1089f37910a599298f92a6494a4c23660696d38b5d67e081d216b8a4f93ae2d6","success":false,"timestamp":1783843183486,"data":null}
+【业务码 code】=500
+【业务成功 success】=False
+【业务消息 msg】=无效签名：1089f37910a599298f92a6494a4c23660696d38b5d67e081d216b8a4f93ae2d6
